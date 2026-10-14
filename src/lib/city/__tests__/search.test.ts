@@ -21,6 +21,15 @@ describe("search", () => {
     expect([...searchRepos(repos, "tool")]).toEqual([2]);
     expect(searchRepos(repos, "").size).toBe(0);
   });
+  it("matches short terms as whole words only", () => {
+    const list = [
+      repo({ id: "x/django-app", lang: ["Python"], fw: ["Django"], topics: ["google"] }),
+      repo({ id: "y/server", lang: ["Go"], fw: [], topics: [] }),
+    ];
+    expect([...searchRepos(list, "go")]).toEqual([1]);
+    expect([...searchRepos(list, "goo")]).toEqual([0]);
+    expect([...searchRepos(list, "c++")]).toEqual([]);
+  });
 });
 
 describe("stats", () => {
