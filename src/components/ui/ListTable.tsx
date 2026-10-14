@@ -82,7 +82,7 @@ export function ListTable({ repos }: { repos: CityRepo[] }) {
             setLimit(PAGE);
           }}
           placeholder="Filter: python, django"
-          className="min-w-0 flex-1 bg-transparent text-[14.5px] text-ink outline-none placeholder:text-ink-3"
+          className="no-ring min-w-0 flex-1 bg-transparent text-[14.5px] text-ink outline-none placeholder:text-ink-3"
         />
         <span className="num text-[12px] text-ink-3" aria-live="polite">
           {count(rows.length)} of {count(repos.length)}

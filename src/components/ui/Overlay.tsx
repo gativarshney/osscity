@@ -62,12 +62,12 @@ export function Overlay({ stats, generatedAt, loadError, viewReason }: Props) {
             {stats ? `${count(stats.projects)} open source projects, measured by Contributable` : "Open source projects, measured by Contributable"}
           </p>
           <h1 className="mt-2 text-[clamp(1.9rem,4.2vw,3rem)] leading-[1.02] font-semibold tracking-[-0.025em] text-ink">
-            See which open source projects actually let newcomers in.
+            Open source, seen from above.
           </h1>
           <p className="mt-3 max-w-md text-[14.5px] leading-relaxed text-ink-2">
-            A map of 1,587 repositories from Google Summer of Code organisations, measured by Contributable.
-            Districts are languages or organisations. Tall means busy. Lit windows mean newcomers get a reply
-            within 48 hours. Switch the lens at the top to see activity, free issues, merged work or evidence.
+            A night city of 1,587 repositories from Google Summer of Code organisations. Districts are
+            languages or organisations, height is activity, and lit windows are projects that answer
+            newcomers within 48 hours. Fly through it, switch the lens, and see where you would fit.
           </p>
           <SearchBox disabled={preparing} />
           <Friendliest />
@@ -207,7 +207,7 @@ function SearchBox({ disabled }: { disabled: boolean }) {
             disabled={disabled}
             autoComplete="off"
             spellCheck={false}
-            className="min-w-0 flex-1 bg-transparent text-[15px] text-ink outline-none placeholder:text-ink-3"
+            className="no-ring min-w-0 flex-1 bg-transparent text-[15px] text-ink outline-none placeholder:text-ink-3"
           />
           {query ? (
             <span className="num shrink-0 text-[12px] text-accent" aria-live="polite">
