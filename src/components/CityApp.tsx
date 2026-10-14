@@ -5,9 +5,12 @@ import { useEffect, useState } from "react";
 import type { CityStats } from "@/lib/city/stats";
 import type { CityFeed } from "@/lib/city/types";
 import { chooseView, highQuality, prefersReducedMotion } from "@/lib/device";
+import { lensById } from "@/lib/city/lens";
 import { useCity } from "@/lib/store";
 import { FlatMap } from "./city/FlatMap";
 import { ComparePanel } from "./ui/ComparePanel";
+import { DistrictPanel, RankingPanel } from "./ui/DistrictPanels";
+import { LensBar } from "./ui/LensBar";
 import { ModeBar } from "./ui/ModeBar";
 import { AwakePanel, GhostsPanel, TourCaption } from "./ui/ModePanels";
 import { Overlay } from "./ui/Overlay";
@@ -52,22 +55,39 @@ export function CityApp({ stats, generatedAt }: Props) {
   // A search can be shared as a link: /?q=python,django
   const query = useCity((s) => s.query);
   const setQuery = useCity((s) => s.setQuery);
+  const lens = useCity((s) => s.lens);
+  const groupBy = useCity((s) => s.groupBy);
+  const district = useCity((s) => s.district);
   useEffect(() => {
     if (!feed) return;
-    const q = new URLSearchParams(window.location.search).get("q");
-    if (q && !useCity.getState().query) setQuery(q);
+    const params = new URLSearchParams(window.location.search);
+    const s = useCity.getState();
+    const q = params.get("q");
+    if (q && !s.query) setQuery(q);
+    const l = params.get("lens");
+    if (l && l !== s.lens) s.setLens(lensById(l).id);
+    const g = params.get("group");
+    if ((g === "org" || g === "language") && g !== s.groupBy) s.setGroupBy(g);
+    const d = params.get("district");
+    if (d) s.openDistrict(d);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [feed]);
   useEffect(() => {
     if (!feed) return;
     const timer = setTimeout(() => {
       const url = new URL(window.location.href);
-      if (query.trim()) url.searchParams.set("q", query.trim());
-      else url.searchParams.delete("q");
+      const put = (key: string, value: string | null) => {
+        if (value) url.searchParams.set(key, value);
+        else url.searchParams.delete(key);
+      };
+      put("q", query.trim() || null);
+      put("lens", lens === "replies" ? null : lens);
+      put("group", groupBy === "language" ? null : groupBy);
+      put("district", district);
       window.history.replaceState(null, "", url);
     }, 400);
     return () => clearTimeout(timer);
-  }, [query, feed]);
+  }, [query, lens, groupBy, district, feed]);
 
   useEffect(() => {
     let cancelled = false;
@@ -101,7 +121,10 @@ export function CityApp({ stats, generatedAt }: Props) {
         viewReason={reason}
       />
       <ModeBar generatedAt={generatedAt ?? feed?.generatedAt ?? null} />
+      <LensBar />
       <ViewControls />
+      <DistrictPanel />
+      <RankingPanel />
       <RepoCard />
       <ComparePanel />
       <GhostsPanel />
