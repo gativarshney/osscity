@@ -24,7 +24,7 @@ export function Overlay({ stats, generatedAt, loadError, viewReason }: Props) {
   const selected = useCity((s) => s.selected);
   const mode = useCity((s) => s.mode);
   const preparing = !feed && !loadError;
-  const quiet = selected != null || mode === "tour";
+  const quiet = selected != null || mode !== "explore";
 
   return (
     <div className="pointer-events-none absolute inset-0 z-20 flex flex-col">
@@ -178,18 +178,18 @@ function Stats({ stats, preparing, loadError }: { stats: CityStats | null; prepa
     [count(stats.projects), "projects in the city"],
     [
       stats.within7dShare == null ? "No data" : `${Math.round(stats.within7dShare * 100)}%`,
-      `of outside pull requests answered within 7 days, over ${count(stats.within7dProjects)} projects`,
+      `of outside PRs answered within 7 days, across ${count(stats.within7dProjects)} projects`,
     ],
     [count(stats.freeIssues), "free first issues right now"],
   ];
   return (
-    <dl className="mt-6 grid max-w-lg grid-cols-3 gap-3">
+    <dl className="mt-5 grid max-w-lg grid-cols-3 gap-2 sm:mt-6 sm:gap-3">
       {items.map(([value, label]) => (
-        <div key={label} className="glass rounded-2xl px-3.5 py-3">
+        <div key={label} className="glass rounded-2xl px-2.5 py-2.5 sm:px-3.5 sm:py-3">
           <dd className="num text-[clamp(1.3rem,3.2vw,1.9rem)] leading-none font-semibold tracking-tight text-ink">
             {value}
           </dd>
-          <dt className="mt-1.5 text-[11.5px] leading-snug text-ink-3">{label}</dt>
+          <dt className="mt-1 text-[10.5px] leading-snug text-ink-3 sm:mt-1.5 sm:text-[11.5px]">{label}</dt>
         </div>
       ))}
     </dl>
