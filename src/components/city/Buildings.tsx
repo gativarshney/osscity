@@ -3,7 +3,8 @@
 import { useFrame, type ThreeEvent } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
-import { COLOURS, facadeColour, lightFor, windowColour } from "@/lib/city/encode";
+import { COLOURS, facadeColour, lightFor } from "@/lib/city/encode";
+import { lensById } from "@/lib/city/lens";
 import type { CityPlan } from "@/lib/city/layout";
 import type { CityFeed } from "@/lib/city/types";
 import { useCity } from "@/lib/store";
@@ -74,31 +75,41 @@ export function Buildings({ feed, plan, interactive }: Props) {
     return m;
   }, []);
 
-  // Static per-instance data: transforms, facade colours, light shares, window colours.
-  const { stateAttr } = useMemo(() => {
-    const light = new Float32Array(count);
-    const window = new Float32Array(count * 3);
+  // Per-instance data: seeds and state once; light shares and window colours per lens.
+  const { stateAttr, lightAttr, windowAttr } = useMemo(() => {
     const seed = new Float32Array(count);
-    const state = new Float32Array(count);
-    const colour = new THREE.Color();
-    for (const b of plan.buildings) {
-      const repo = feed.repos[b.index];
-      const { share, kind } = lightFor(repo);
-      light[b.index] = share;
-      colour.set(windowColour(kind));
-      window[b.index * 3] = colour.r;
-      window[b.index * 3 + 1] = colour.g;
-      window[b.index * 3 + 2] = colour.b;
-      seed[b.index] = ((b.index * 2654435761) % 1000) / 1000;
-    }
-    geometry.setAttribute("aLight", new THREE.InstancedBufferAttribute(light, 1));
-    geometry.setAttribute("aWindow", new THREE.InstancedBufferAttribute(window, 3));
+    for (let i = 0; i < count; i++) seed[i] = ((i * 2654435761) % 1000) / 1000;
     geometry.setAttribute("aSeed", new THREE.InstancedBufferAttribute(seed, 1));
-    const stateAttr = new THREE.InstancedBufferAttribute(state, 1);
+    const lightAttr = new THREE.InstancedBufferAttribute(new Float32Array(count), 1);
+    lightAttr.setUsage(THREE.DynamicDrawUsage);
+    geometry.setAttribute("aLight", lightAttr);
+    const windowAttr = new THREE.InstancedBufferAttribute(new Float32Array(count * 3), 3);
+    windowAttr.setUsage(THREE.DynamicDrawUsage);
+    geometry.setAttribute("aWindow", windowAttr);
+    const stateAttr = new THREE.InstancedBufferAttribute(new Float32Array(count), 1);
     stateAttr.setUsage(THREE.DynamicDrawUsage);
     geometry.setAttribute("aState", stateAttr);
-    return { stateAttr };
-  }, [count, feed, plan, geometry]);
+    return { stateAttr, lightAttr, windowAttr };
+  }, [count, geometry]);
+
+  const lensId = useCity((s) => s.lens);
+  useEffect(() => {
+    const lens = lensById(lensId);
+    const light = lightAttr.array as Float32Array;
+    const window = windowAttr.array as Float32Array;
+    const colour = new THREE.Color();
+    for (let i = 0; i < count; i++) {
+      const repo = feed.repos[i];
+      const reading = lens.read(repo);
+      light[i] = reading.share;
+      colour.set(reading.colour);
+      window[i * 3] = colour.r;
+      window[i * 3 + 1] = colour.g;
+      window[i * 3 + 2] = colour.b;
+    }
+    lightAttr.needsUpdate = true;
+    windowAttr.needsUpdate = true;
+  }, [lensId, feed, count, lightAttr, windowAttr]);
 
   useEffect(() => {
     const m = mesh.current;

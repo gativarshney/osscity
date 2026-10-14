@@ -2,7 +2,9 @@ import { create } from "zustand";
 import { awakeAt, utcHour } from "./city/awake";
 import { friendliest, ghostTowns } from "./city/encode";
 import { planRoute, type RouteStop } from "./city/route";
-import { planCity, type CityPlan } from "./city/layout";
+import { allDistrictStats, type DistrictStats } from "./city/districts";
+import { planCity, type CityPlan, type GroupBy } from "./city/layout";
+import { DEFAULT_LENS, type LensId } from "./city/lens";
 import { searchRepos } from "./city/search";
 import type { CityFeed, CityRepo } from "./city/types";
 
@@ -47,6 +49,20 @@ interface CityState {
 
   view: View;
   setView: (view: View) => void;
+  /** What the windows show. */
+  lens: LensId;
+  setLens: (lens: LensId) => void;
+  /** How districts are formed. Changing it rebuilds the plan. */
+  groupBy: GroupBy;
+  setGroupBy: (groupBy: GroupBy) => void;
+  /** Figures for every district of the current plan. */
+  districts: DistrictStats[];
+  /** The district open in the panel, by name. */
+  district: string | null;
+  openDistrict: (name: string | null) => void;
+  /** The ecosystem ranking panel. */
+  ranking: boolean;
+  setRanking: (open: boolean) => void;
   /** True once the opening flight has ended or been skipped. */
   introDone: boolean;
   finishIntro: () => void;
@@ -113,7 +129,7 @@ export const useCity = create<CityState>((set, get) => ({
   plan: null,
   loadError: false,
   setFeed: (feed) => {
-    const plan = planCity(feed.repos);
+    const plan = planCity(feed.repos, { groupBy: get().groupBy, orgNames: feed.orgs });
     const byId = new Map(feed.repos.map((r, i) => [r.id, i]));
     const top = friendliest(feed.repos, 10).map((r) => byId.get(r.id) as number);
     const ghosts = ghostTowns(feed.repos, 40).map((r) => byId.get(r.id) as number);
@@ -121,6 +137,7 @@ export const useCity = create<CityState>((set, get) => ({
     set({
       feed,
       plan,
+      districts: allDistrictStats(feed.repos, plan),
       friendliest: top,
       tour: top,
       tourTitle: "The ten friendliest",
@@ -135,6 +152,23 @@ export const useCity = create<CityState>((set, get) => ({
 
   view: "3d",
   setView: (view) => set({ view }),
+  lens: DEFAULT_LENS,
+  setLens: (lens) => set({ lens }),
+  groupBy: "language",
+  setGroupBy: (groupBy) => {
+    const feed = get().feed;
+    if (!feed) {
+      set({ groupBy });
+      return;
+    }
+    const plan = planCity(feed.repos, { groupBy, orgNames: feed.orgs });
+    set({ groupBy, plan, districts: allDistrictStats(feed.repos, plan), district: null, selected: null });
+  },
+  districts: [],
+  district: null,
+  openDistrict: (district) => set({ district, ranking: false }),
+  ranking: false,
+  setRanking: (ranking) => set({ ranking, district: ranking ? null : get().district }),
   introDone: false,
   finishIntro: () => set({ introDone: true }),
   sceneReady: false,

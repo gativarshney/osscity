@@ -75,6 +75,7 @@ function Plate({
   }, [matches, feed, plan, name]);
 
   const ref = useRef<THREE.Mesh>(null);
+  const openDistrict = useCity((s) => s.openDistrict);
   useFrame(({ clock }) => {
     material.uniforms.uTime.value = clock.elapsedTime;
     const u = material.uniforms.uGlow;
@@ -83,7 +84,17 @@ function Plate({
 
   return (
     <group position={[x, 0, z]}>
-      <mesh ref={ref} rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]} material={material}>
+      <mesh
+        ref={ref}
+        rotation={[-Math.PI / 2, 0, 0]}
+        position={[0, -0.01, 0]}
+        material={material}
+        onClick={(e) => {
+          if (e.delta > 4) return;
+          e.stopPropagation();
+          openDistrict(name);
+        }}
+      >
         <planeGeometry args={[w, d]} />
       </mesh>
       <Text

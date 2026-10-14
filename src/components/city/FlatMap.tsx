@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { COLOURS, lightFor, windowColour } from "@/lib/city/encode";
+import { COLOURS } from "@/lib/city/encode";
+import { lensById } from "@/lib/city/lens";
 import type { CityPlan } from "@/lib/city/layout";
 import type { CityFeed } from "@/lib/city/types";
 import { useCity } from "@/lib/store";
@@ -23,6 +24,8 @@ export function FlatMap({ feed, plan }: Props) {
   const redraw = () => bump((n) => n + 1);
 
   const matches = useCity((s) => s.matches);
+  const lensId = useCity((s) => s.lens);
+  const openDistrict = useCity((s) => s.openDistrict);
   const mode = useCity((s) => s.mode);
   const tour = useCity((s) => s.tour);
   const tourStep = useCity((s) => s.tourStep);
@@ -153,10 +156,11 @@ export function FlatMap({ feed, plan }: Props) {
       }
     }
 
-    // Buildings: footprint sized by stars, colour by light, brightness by height.
+    // Buildings: footprint sized by stars, colour by the lens, brightness by height.
+    const lens = lensById(lensId);
     for (const b of plan.buildings) {
       const repo = feed.repos[b.index];
-      const { kind, share } = lightFor(repo);
+      const reading = lens.read(repo);
       let state = 0;
       if (selected === b.index || (mode === "compare" && compare.includes(b.index))) state = 3;
       else if (mode === "tour") state = tour[tourStep] === b.index ? 3 : tour.includes(b.index) ? 2 : 1;
@@ -168,7 +172,7 @@ export function FlatMap({ feed, plan }: Props) {
       const y = sy(b.z) - s / 2;
       const alpha = state === 1 ? 0.18 : 0.35 + 0.65 * Math.min(1, b.height / 12);
       ctx.globalAlpha = alpha;
-      ctx.fillStyle = kind === "unknown" ? "#1a2233" : kind === "dark" ? "#141a30" : mixColour(windowColour(kind), share);
+      ctx.fillStyle = reading.known ? mixColour(reading.colour, reading.share) : "#1a2233";
       ctx.fillRect(x, y, s, s);
       if (state >= 2) {
         ctx.globalAlpha = 1;
@@ -258,6 +262,13 @@ export function FlatMap({ feed, plan }: Props) {
         if (hit != null) {
           if (useCity.getState().mode === "compare") togglePick(hit);
           else select(hit);
+        } else {
+          const rect = c.getBoundingClientRect();
+          const { x: ox, y: oy, scale } = view.current;
+          const wx = (e.clientX - rect.left - ox) / scale;
+          const wz = (e.clientY - rect.top - oy) / scale;
+          const d = plan.districts.find((d) => Math.abs(d.x - wx) <= d.width / 2 + 0.6 && Math.abs(d.z - wz) <= d.depth / 2 + 0.6);
+          if (d) openDistrict(d.name);
         }
       }
     };
@@ -300,7 +311,7 @@ export function FlatMap({ feed, plan }: Props) {
       c.removeEventListener("wheel", onWheel);
       c.removeEventListener("dblclick", onDouble);
     };
-  }, [plan, select, setHovered, togglePick]);
+  }, [plan, select, setHovered, togglePick, openDistrict]);
 
   const hoveredRepo = hovered != null ? feed.repos[hovered] : null;
   const hb = hovered != null ? plan.buildings[hovered] : null;
