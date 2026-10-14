@@ -82,8 +82,9 @@ function HoverLabel({ feed, plan }: { feed: CityFeed; plan: CityPlan }) {
       zIndexRange={[20, 0]}
       style={{ pointerEvents: "none" }}
     >
-      <div className="glass-strong rise rounded-full px-3 py-1.5 text-[13px] font-medium whitespace-nowrap text-ink">
+      <div className="glass-strong rise flex items-center gap-2 rounded-full px-3 py-1.5 text-[13px] font-medium whitespace-nowrap text-ink">
         {repo.id}
+        <span className="num text-[12px] font-normal text-ink-3">{hoverNote(repo)}</span>
       </div>
     </Html>
   );
@@ -114,4 +115,10 @@ function Marker({ plan }: { plan: CityPlan }) {
       <meshBasicMaterial color="#7fd9d0" transparent opacity={0.7} depthWrite={false} />
     </mesh>
   );
+}
+
+/** One figure next to the name: the 48 hour reply share, or the sample size when withheld. */
+function hoverNote(repo: CityFeed["repos"][number]): string {
+  if (repo.within48h == null) return repo.replyN === 0 ? "no outside PRs yet" : `${repo.replyN} outside PRs, not enough data`;
+  return `${Math.round(repo.within48h * 100)}% replied within 48 h`;
 }

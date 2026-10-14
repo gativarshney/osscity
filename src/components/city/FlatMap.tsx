@@ -49,8 +49,11 @@ export function FlatMap({ feed, plan }: Props) {
     if (!el) return;
     const w = el.clientWidth;
     const h = el.clientHeight;
-    const scale = Math.min(w / (plan.halfWidth * 2 + 12), h / (plan.halfDepth * 2 + 12));
-    view.current = { x: w / 2, y: h / 2, scale };
+    // On wide screens the title sits on the left, so the map is framed to the right of it.
+    const wide = w >= 900;
+    const usable = wide ? w * 0.6 : w;
+    const scale = Math.min(usable / (plan.halfWidth * 2 + 12), (h - 120) / (plan.halfDepth * 2 + 12));
+    view.current = { x: wide ? w * 0.4 + usable / 2 : w / 2, y: h / 2 - 10, scale };
     setSize({ w, h });
   };
   useEffect(() => {

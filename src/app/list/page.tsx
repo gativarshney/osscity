@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ListTable } from "@/components/ui/ListTable";
 import { getCityFeed } from "@/lib/city/source";
+import type { CityRepo } from "@/lib/city/types";
 import { compactDate } from "@/lib/format";
 
 export const revalidate = 900;
@@ -44,7 +45,7 @@ export default async function ListPage() {
         </Link>
       </header>
       {feed ? (
-        <ListTable repos={feed.repos} />
+        <ListTable repos={feed.repos.map(forTable)} />
       ) : (
         <p className="mt-10 text-ink-2" role="status">
           Preparing the city. Contributable&apos;s index is not available right now.
@@ -52,4 +53,16 @@ export default async function ListPage() {
       )}
     </main>
   );
+}
+
+/** Only the fields the table shows and filters on, so the page stays light. */
+function forTable(r: CityRepo): CityRepo {
+  return {
+    ...r,
+    d: "",
+    years: [],
+    hours: null,
+    topics: r.topics.slice(0, 3),
+    fw: r.fw.slice(0, 3),
+  };
 }
