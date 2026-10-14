@@ -45,7 +45,8 @@ export function CityApp({ stats, generatedAt }: Props) {
     setView(choice.view);
     setReason(choice.reason);
     setQuality(highQuality() ? "high" : "low");
-    setSkipIntro(prefersReducedMotion());
+    // A shared search link goes straight to the stack instead of the opening flight.
+    setSkipIntro(prefersReducedMotion() || new URLSearchParams(window.location.search).has("q"));
   }, [setView]);
 
   // A search can be shared as a link: /?q=python,django
