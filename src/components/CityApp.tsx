@@ -9,9 +9,10 @@ import { useCity } from "@/lib/store";
 import { FlatMap } from "./city/FlatMap";
 import { ComparePanel } from "./ui/ComparePanel";
 import { ModeBar } from "./ui/ModeBar";
-import { GhostsPanel, TourCaption } from "./ui/ModePanels";
+import { AwakePanel, GhostsPanel, TourCaption } from "./ui/ModePanels";
 import { Overlay } from "./ui/Overlay";
 import { RepoCard } from "./ui/RepoCard";
+import { ViewControls } from "./ui/ViewControls";
 
 const CityScene = dynamic(() => import("./city/CityScene").then((m) => m.CityScene), {
   ssr: false,
@@ -79,9 +80,11 @@ export function CityApp({ stats, generatedAt }: Props) {
         viewReason={reason}
       />
       <ModeBar generatedAt={generatedAt ?? feed?.generatedAt ?? null} />
+      <ViewControls />
       <RepoCard />
       <ComparePanel />
       <GhostsPanel />
+      <AwakePanel />
       <TourCaption />
     </div>
   );

@@ -27,6 +27,7 @@ export function FlatMap({ feed, plan }: Props) {
   const tour = useCity((s) => s.tour);
   const tourStep = useCity((s) => s.tourStep);
   const ghosts = useCity((s) => s.ghosts);
+  const awake = useCity((s) => s.awake);
   const compare = useCity((s) => s.compare);
   const selected = useCity((s) => s.selected);
   const hovered = useCity((s) => s.hovered);
@@ -37,6 +38,23 @@ export function FlatMap({ feed, plan }: Props) {
   const finishIntro = useCity((s) => s.finishIntro);
   const resetSerial = useCity((s) => s.resetSerial);
   const goal = useCity((s) => s.goal);
+  const command = useCity((s) => s.command);
+  useEffect(() => {
+    if (!command) return;
+    const el = canvas.current?.parentElement;
+    if (!el) return;
+    if (command.kind === "overview" || command.kind === "top" || command.kind === "street") fit();
+    else if (command.kind === "zoom") {
+      const v = view.current;
+      const next = Math.min(60, Math.max(0.5, v.scale / command.factor));
+      const k = next / v.scale;
+      v.x = el.clientWidth / 2 - (el.clientWidth / 2 - v.x) * k;
+      v.y = el.clientHeight / 2 - (el.clientHeight / 2 - v.y) * k;
+      v.scale = next;
+    } else if (command.kind === "frame") useCity.getState().frame(command.indices);
+    redraw();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [command?.serial]);
 
   useEffect(() => {
     finishIntro();
@@ -143,6 +161,7 @@ export function FlatMap({ feed, plan }: Props) {
       if (selected === b.index || (mode === "compare" && compare.includes(b.index))) state = 3;
       else if (mode === "tour") state = tour[tourStep] === b.index ? 3 : tour.includes(b.index) ? 2 : 1;
       else if (mode === "ghosts") state = ghosts.includes(b.index) ? 2 : 1;
+      else if (mode === "awake") state = awake.includes(b.index) ? 2 : 1;
       else if (matches) state = matches.has(b.index) ? 2 : 1;
       const s = Math.max(2, b.size * scale * 0.9);
       const x = sx(b.x) - s / 2;

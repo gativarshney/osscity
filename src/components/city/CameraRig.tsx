@@ -127,6 +127,40 @@ export function CameraRig({ plan, skipIntro }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [goal?.serial]);
 
+  // View controls: presets and nudges.
+  const command = useCity((s) => s.command);
+  useEffect(() => {
+    if (!command) return;
+    const p = pose.current;
+    const current = clonePose(p);
+    const s = useCity.getState();
+    if (!s.introDone) s.finishIntro();
+    switch (command.kind) {
+      case "overview":
+        fly(overviewPose(plan), 1.3);
+        break;
+      case "top":
+        fly({ ...current, elevation: MAX_ELEVATION, distance: Math.max(current.distance, span * 1.6) }, 1.2);
+        break;
+      case "street":
+        fly({ ...current, elevation: 0.16, distance: Math.min(current.distance, 28) }, 1.2);
+        break;
+      case "rotate":
+        fly({ ...current, azimuth: current.azimuth + command.by }, 0.6);
+        break;
+      case "tilt":
+        fly({ ...current, elevation: THREE.MathUtils.clamp(current.elevation + command.by, MIN_ELEVATION, MAX_ELEVATION) }, 0.6);
+        break;
+      case "zoom":
+        fly({ ...current, distance: clampDistance(current.distance * command.factor, span) }, 0.5);
+        break;
+      case "frame":
+        s.frame(command.indices, command.seconds);
+        break;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [command?.serial]);
+
   const resetSerial = useCity((s) => s.resetSerial);
   useEffect(() => {
     if (resetSerial) fly(overviewPose(plan), 1.4);
@@ -187,11 +221,17 @@ export function CameraRig({ plan, skipIntro }: Props) {
         const d = Math.hypot(a.x - b.x, a.y - b.y);
         if (pinch > 0) p.distance = clampDistance(p.distance * (pinch / d), span);
         pinch = d;
-        p.azimuth -= dx * 0.004;
+        // Two fingers together slide the city.
+        const scale = (p.distance / el.clientHeight) * 1.2;
+        const sin = Math.sin(p.azimuth);
+        const cos = Math.cos(p.azimuth);
+        p.target.x = THREE.MathUtils.clamp(p.target.x - sin * dy * scale - cos * dx * scale, -span * 1.3, span * 1.3);
+        p.target.z = THREE.MathUtils.clamp(p.target.z - cos * dy * scale + sin * dx * scale, -span * 1.3, span * 1.3);
         return;
       }
-      const rotate = e.buttons === 2 || e.shiftKey || e.ctrlKey || e.metaKey;
-      if (rotate) {
+      // Left drag orbits the camera; right, middle or shift drag slides the city.
+      const pan = e.buttons === 2 || e.buttons === 4 || e.shiftKey || e.ctrlKey || e.metaKey;
+      if (!pan) {
         p.azimuth -= dx * 0.005;
         p.elevation = THREE.MathUtils.clamp(p.elevation + dy * 0.004, MIN_ELEVATION, MAX_ELEVATION);
       } else {
