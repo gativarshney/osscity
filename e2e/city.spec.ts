@@ -7,8 +7,8 @@ import { expect, test } from "@playwright/test";
 test("loads, searches, opens a card and links to Contributable", async ({ page }) => {
   await page.goto("/");
 
-  await expect(page.getByRole("heading", { level: 1, name: "OSS City" })).toBeVisible();
-  await expect(page.getByText("projects in the city")).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(/answers your first pull request/);
+  await expect(page.getByText(/open source projects, measured by Contributable/i)).toBeVisible();
   await expect(page.getByText(/Data from Contributable, updated/)).toBeVisible();
   await expect(page.getByRole("link", { name: "Powered by Contributable" })).toHaveAttribute(
     "href",
@@ -23,7 +23,7 @@ test("loads, searches, opens a card and links to Contributable", async ({ page }
 
   // The list view has the same data; open a card from there is not possible, so use the
   // ghost towns list, which opens a card for a known building.
-  await page.getByRole("button", { name: "Ghost towns" }).click();
+  await page.getByRole("button", { name: "Who ignores newcomers" }).click();
   const first = page.getByRole("region", { name: "Ghost towns" }).getByRole("button").nth(1);
   await first.click();
 
@@ -62,20 +62,23 @@ test("compare picks two buildings and the postcard downloads an image", async ({
   await page.getByRole("button", { name: "Skip the flight" }).waitFor({ state: "hidden", timeout: 20_000 });
 
   // Pick two buildings from the ghost towns list, then compare them.
-  await page.getByRole("button", { name: "Compare" }).click();
+  await page.getByRole("button", { name: "Compare two" }).click();
   await expect(page.getByRole("region", { name: "Compare two projects" })).toBeVisible();
   await page.keyboard.press("Escape");
-  await page.getByRole("button", { name: "Ghost towns" }).click();
+  await page.getByRole("button", { name: "Who ignores newcomers" }).click();
   const list = page.getByRole("region", { name: "Ghost towns" });
   await list.getByRole("button").nth(1).click();
   await expect(page.getByRole("dialog")).toBeVisible();
   await page.keyboard.press("Escape");
 
   const download = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Postcard" }).click();
+  await page.getByRole("button", { name: "More" }).click();
+  await page.getByRole("menuitem", { name: /Save a postcard/ }).click();
   const file = await download;
   expect(file.suggestedFilename()).toMatch(/^osscity-\d{4}-\d{2}-\d{2}\.png$/);
 
-  await page.getByRole("button", { name: "2D map" }).click();
-  await expect(page.getByRole("button", { name: "3D city" })).toBeVisible();
+  await page.getByRole("button", { name: "More" }).click();
+  await page.getByRole("menuitem", { name: /Flat map/ }).click();
+  await page.getByRole("button", { name: "More" }).click();
+  await expect(page.getByRole("menuitem", { name: /Back to the 3D city/ })).toBeVisible();
 });
