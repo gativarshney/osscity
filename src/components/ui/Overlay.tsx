@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { CityStats } from "@/lib/city/stats";
 import { compactDate, count } from "@/lib/format";
 import { useCity } from "@/lib/store";
@@ -59,6 +59,7 @@ export function Overlay({ stats, generatedAt, loadError, viewReason }: Props) {
           </h1>
           <p className="mt-3 max-w-md text-[15px] leading-relaxed text-ink-2 sm:text-base">{TAGLINE}</p>
           <SearchBox disabled={preparing} />
+          <Actions disabled={preparing} />
           <Stats stats={stats} preparing={preparing} loadError={loadError} />
           <p className="mt-3 text-[12px] text-ink-3">
             By{" "}
@@ -75,6 +76,7 @@ export function Overlay({ stats, generatedAt, loadError, viewReason }: Props) {
       </div>
 
       {selected == null && mode === "explore" ? <Legend /> : null}
+      {introDone && !preparing && mode === "explore" ? <Hint /> : null}
 
       {!introDone && !preparing ? (
         <button
@@ -219,5 +221,54 @@ function Legend() {
         </li>
       </ul>
     </aside>
+  );
+}
+
+/** The two things a newcomer most likely wants: the guided tour, and Contributable itself. */
+function Actions({ disabled }: { disabled: boolean }) {
+  const setMode = useCity((s) => s.setMode);
+  return (
+    <div className="pointer-events-auto mt-3 flex flex-wrap items-center gap-2">
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => setMode("tour")}
+        className="inline-flex items-center gap-2 rounded-2xl bg-accent px-4 py-2.5 text-[14px] font-medium text-accent-ink transition-transform hover:scale-[1.02] active:scale-[0.99] disabled:opacity-50"
+      >
+        <svg viewBox="0 0 20 20" className="size-3.5" fill="currentColor" aria-hidden="true">
+          <path d="M6 4l10 6-10 6z" />
+        </svg>
+        Take the tour
+      </button>
+      <a
+        href="https://contributable.vercel.app"
+        target="_blank"
+        rel="noopener"
+        className="inline-flex items-center gap-2 rounded-2xl border border-hair-strong px-4 py-2.5 text-[14px] text-ink-2 transition-colors hover:border-accent hover:text-ink"
+      >
+        Visit Contributable
+        <svg viewBox="0 0 20 20" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M7 13 13 7M8 7h5v5" />
+        </svg>
+      </a>
+    </div>
+  );
+}
+
+/** A one-line reminder of the controls, shown once the opening flight has landed. */
+function Hint() {
+  const [shown, setShown] = useState(true);
+  useEffect(() => {
+    const timer = setTimeout(() => setShown(false), 9000);
+    return () => clearTimeout(timer);
+  }, []);
+  if (!shown) return null;
+  return (
+    <p className="glass rise pointer-events-auto absolute right-4 bottom-20 hidden rounded-full px-4 py-2 text-[12.5px] text-ink-2 sm:bottom-24 sm:right-6 md:block">
+      Drag to fly, scroll to zoom, click a building for its card, double-click to focus.
+      <button type="button" onClick={() => setShown(false)} className="ml-2 text-ink-3 hover:text-ink" aria-label="Dismiss">
+        x
+      </button>
+    </p>
   );
 }

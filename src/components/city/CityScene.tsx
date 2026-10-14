@@ -1,9 +1,9 @@
 "use client";
 
 import { Html } from "@react-three/drei";
-import { Canvas, useThree } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Bloom, EffectComposer, Vignette } from "@react-three/postprocessing";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import type { CityPlan } from "@/lib/city/layout";
 import type { CityFeed } from "@/lib/city/types";
@@ -45,9 +45,10 @@ export function CityScene({ feed, plan, quality, skipIntro }: Props) {
       <Buildings feed={feed} plan={plan} interactive />
       <CameraRig plan={plan} skipIntro={skipIntro} />
       <HoverLabel feed={feed} plan={plan} />
+      <Marker plan={plan} />
       {quality === "high" ? (
         <EffectComposer multisampling={0}>
-          <Bloom intensity={0.55} luminanceThreshold={0.72} luminanceSmoothing={0.3} mipmapBlur />
+          <Bloom intensity={0.7} luminanceThreshold={0.68} luminanceSmoothing={0.35} mipmapBlur />
           <Vignette eskil={false} offset={0.2} darkness={0.75} />
         </EffectComposer>
       ) : null}
@@ -85,5 +86,32 @@ function HoverLabel({ feed, plan }: { feed: CityFeed; plan: CityPlan }) {
         {repo.id}
       </div>
     </Html>
+  );
+}
+
+/** A soft ring on the ground under the selected building or the current tour stop. */
+function Marker({ plan }: { plan: CityPlan }) {
+  const selected = useCity((s) => s.selected);
+  const mode = useCity((s) => s.mode);
+  const tour = useCity((s) => s.tour);
+  const tourStep = useCity((s) => s.tourStep);
+  const ref = useRef<THREE.Mesh>(null);
+  const index = mode === "tour" && tourStep < tour.length ? tour[tourStep] : selected;
+  const b = index != null ? plan.buildings[index] : null;
+  useFrame(({ clock }) => {
+    const m = ref.current;
+    if (!m) return;
+    const t = clock.elapsedTime;
+    const s = 1 + 0.12 * Math.sin(t * 2.2);
+    m.scale.set(s, s, 1);
+    (m.material as THREE.MeshBasicMaterial).opacity = 0.55 + 0.25 * Math.sin(t * 2.2);
+  });
+  if (!b) return null;
+  const r = b.size * 1.1;
+  return (
+    <mesh ref={ref} position={[b.x, 0.03, b.z]} rotation={[-Math.PI / 2, 0, 0]}>
+      <ringGeometry args={[r, r + 0.35, 48]} />
+      <meshBasicMaterial color="#7fd9d0" transparent opacity={0.7} depthWrite={false} />
+    </mesh>
   );
 }

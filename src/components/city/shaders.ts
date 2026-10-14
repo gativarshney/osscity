@@ -87,13 +87,13 @@ export const buildingFragment = /* glsl */ `
     // Window grid on the side faces. Cells are 0.32 m wide and 0.42 m tall.
     float along = abs(n.x) > 0.5 ? vLocal.z : vLocal.x;
     float heightM = vLocal.y + vHeight * 0.5;
-    vec2 cell = vec2(floor(along / 0.32), floor((heightM - 0.18) / 0.42));
-    vec2 f = vec2(fract(along / 0.32), fract((heightM - 0.18) / 0.42));
+    vec2 cell = vec2(floor(along / 0.27), floor((heightM - 0.16) / 0.36));
+    vec2 f = vec2(fract(along / 0.27), fract((heightM - 0.16) / 0.36));
     float face = abs(n.x) > 0.5 ? sign(n.x) * 3.0 : sign(n.z) * 7.0;
     float h = hash(cell + vec2(vSeed * 97.0 + face, vSeed * 13.0));
 
     // Inside the pane, leaving a frame.
-    float pane = step(0.18, f.x) * step(f.x, 0.82) * step(0.22, f.y) * step(f.y, 0.78);
+    float pane = step(0.16, f.x) * step(f.x, 0.84) * step(0.2, f.y) * step(f.y, 0.8);
     // Nothing on the bottom strip or above the roofline.
     pane *= step(0.18, heightM) * step(heightM, vHeight - 0.12);
     float lit = step(h, vLight) * pane * (1.0 - up);
@@ -121,8 +121,9 @@ export const buildingFragment = /* glsl */ `
     float rim = pow(1.0 - max(dot(viewDir, n), 0.0), 3.0);
 
     if (vState > 2.5) {
-      // Selected: strong accent rim and brighter windows.
-      colour += uAccent * (0.35 + rim * 0.9);
+      // Selected: a slow accent pulse and a strong rim.
+      float pulse = 0.5 + 0.2 * sin(uTime * 2.5);
+      colour += uAccent * (pulse + rim * 0.9);
       colour += vWindow * lit * 0.6;
     } else if (vState > 1.5) {
       // Highlighted by a search or mode.
@@ -130,7 +131,7 @@ export const buildingFragment = /* glsl */ `
       colour += vWindow * lit * 0.3;
     } else if (vState > 0.5) {
       // Dimmed.
-      colour *= 0.22;
+      colour *= 0.38;
     } else {
       colour += uAccent * rim * 0.08;
     }

@@ -97,9 +97,9 @@ export function ghostTowns(repos: CityRepo[], count = 30): CityRepo[] {
 export const COLOURS = {
   window: "#f2c57c",
   windowDim: "#a88454",
-  unknown: "#53667a",
-  facade: "#141a2b",
-  facadeDark: "#0d1120",
+  unknown: "#5f7390",
+  facade: "#1b2238",
+  facadeDark: "#10152a",
   accent: "#7fd9d0",
   ghost: "#4b5a8a",
 } as const;
