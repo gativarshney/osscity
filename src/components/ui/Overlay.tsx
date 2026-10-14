@@ -49,7 +49,7 @@ export function Overlay({ stats, generatedAt, loadError, viewReason }: Props) {
       </header>
 
       <div
-        className={`flex flex-1 flex-col justify-end px-4 pb-24 transition-opacity duration-500 sm:px-6 sm:pb-6 ${
+        className={`flex flex-1 flex-col justify-center px-4 pb-28 transition-opacity duration-500 sm:px-6 sm:pb-20 ${
           quiet ? "opacity-0" : "opacity-100"
         }`}
       >
@@ -69,7 +69,7 @@ export function Overlay({ stats, generatedAt, loadError, viewReason }: Props) {
         </div>
       </div>
 
-      <Legend />
+      {selected == null && mode === "explore" ? <Legend /> : null}
 
       {!introDone && !preparing ? (
         <button
