@@ -22,7 +22,9 @@ async function shot(width, height, path, { hideUi = false, type = "png", quality
     await page.addStyleTag({ content: ".pointer-events-none.absolute.inset-0.z-20, nav[aria-label=Modes] { display: none !important }" });
   }
   await page.waitForTimeout(400);
-  await page.screenshot({ path, type, quality, fullPage: false });
+  // A font that never settles would otherwise stall the screenshot.
+  await Promise.race([page.evaluate(() => document.fonts.ready), page.waitForTimeout(5000)]);
+  await page.screenshot({ path, type, quality, fullPage: false, timeout: 90_000 });
   await page.close();
   console.log("wrote", path);
 }
