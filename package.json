@@ -43,5 +43,7 @@
   "description": "Every open source project measured by Contributable, built as a 3D city.",
   "engines": {
     "node": ">=20.9"
-  }
+  },
+  "license": "MIT",
+  "author": "Gati Varshney (https://gativarshney.github.io/)"
 }
