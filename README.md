@@ -125,8 +125,7 @@ node scripts/capture.mjs
 ## Links between the two sites
 
 - `osscity.vercel.app/r/<owner>/<repo>` redirects to that repository's page on Contributable.
-- Contributable links back to the city from its navigation, and `contributable.vercel.app/city`
-  redirects here.
+- Every card, tour stop and list row links to the repository's Contributable report.
 
 ## Licence
 
