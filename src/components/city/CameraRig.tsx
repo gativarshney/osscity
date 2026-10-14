@@ -26,12 +26,18 @@ interface Flight {
 const MIN_ELEVATION = 0.12;
 const MAX_ELEVATION = 1.45;
 
-export function overviewPose(plan: CityPlan): Pose {
+export function overviewPose(
+  plan: CityPlan,
+  wide = typeof window !== "undefined" && window.innerWidth >= 900,
+): Pose {
+  const azimuth = -0.55;
+  // On wide screens the title sits on the left, so the city is framed to the right.
+  const shift = wide ? Math.max(plan.halfWidth, plan.halfDepth) * 0.3 : 0;
   return {
-    target: new THREE.Vector3(0, 0, 0),
-    distance: Math.max(plan.halfWidth * 2.3, plan.halfDepth * 3.1),
-    azimuth: -0.55,
-    elevation: 0.66,
+    target: new THREE.Vector3(-Math.cos(azimuth) * shift, 0, Math.sin(azimuth) * shift),
+    distance: Math.max(plan.halfWidth * 2.0, plan.halfDepth * 2.8),
+    azimuth,
+    elevation: 0.58,
   };
 }
 
@@ -99,6 +105,9 @@ export function CameraRig({ plan, skipIntro }: Props) {
       return;
     }
     fly(overviewPose(plan), 3.4, finishIntro);
+    // Frames pause in background tabs, so the overlay must not wait on the flight.
+    const timer = setTimeout(finishIntro, 4200);
+    return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [plan, skipIntro]);
 
@@ -137,9 +146,9 @@ export function CameraRig({ plan, skipIntro }: Props) {
     fly(
       {
         target: new THREE.Vector3(b.x, b.height * 0.45, b.z),
-        distance: 9 + b.height * 1.1,
+        distance: 15 + b.height * 1.5,
         azimuth: -0.9 + tourStep * 0.55,
-        elevation: 0.42,
+        elevation: 0.5,
       },
       1.15,
       () => {

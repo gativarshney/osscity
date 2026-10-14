@@ -7,7 +7,11 @@ import type { CityFeed } from "@/lib/city/types";
 import { chooseView, highQuality, prefersReducedMotion } from "@/lib/device";
 import { useCity } from "@/lib/store";
 import { FlatMap } from "./city/FlatMap";
+import { ComparePanel } from "./ui/ComparePanel";
+import { ModeBar } from "./ui/ModeBar";
+import { GhostsPanel, TourCaption } from "./ui/ModePanels";
 import { Overlay } from "./ui/Overlay";
+import { RepoCard } from "./ui/RepoCard";
 
 const CityScene = dynamic(() => import("./city/CityScene").then((m) => m.CityScene), {
   ssr: false,
@@ -74,6 +78,11 @@ export function CityApp({ stats, generatedAt }: Props) {
         loadError={loadError}
         viewReason={reason}
       />
+      <ModeBar generatedAt={generatedAt ?? feed?.generatedAt ?? null} />
+      <RepoCard />
+      <ComparePanel />
+      <GhostsPanel />
+      <TourCaption />
     </div>
   );
 }
