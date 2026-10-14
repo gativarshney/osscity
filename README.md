@@ -3,6 +3,11 @@
 Every open source project measured by [Contributable](https://contributable.vercel.app), built as a
 night city you can fly through. Live at [osscity.vercel.app](https://osscity.vercel.app).
 
+Status: complete. OSS City is a finished companion to Contributable, not a product under active
+development. It stays live and keeps itself current from Contributable's published data, and the
+code is here for anyone curious about rendering 1,600 instanced buildings with React Three Fiber,
+or about turning a measured dataset into a map with lenses, districts and routes.
+
 ![The city at night: districts by language, towers lit where projects answer newcomers fast](docs/hero.png)
 
 ## How to read the city
