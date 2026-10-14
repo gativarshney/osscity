@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { friendliness } from "@/lib/city/encode";
 import type { CityStats } from "@/lib/city/stats";
-import { compactDate, count } from "@/lib/format";
-import { useCity } from "@/lib/store";
+import { compactDate, count, hours } from "@/lib/format";
+import { buildingGoal, useCity } from "@/lib/store";
 
 interface Props {
   stats: CityStats | null;
@@ -49,16 +50,23 @@ export function Overlay({ stats, generatedAt, loadError, viewReason }: Props) {
       </header>
 
       <div
-        className={`flex flex-1 flex-col justify-center px-4 pb-28 transition-opacity duration-500 sm:px-6 sm:pb-20 ${
-          quiet ? "opacity-0" : "opacity-100"
+        className={`flex min-h-0 flex-1 flex-col justify-center px-4 pb-24 transition-opacity duration-500 sm:px-6 sm:pb-20 ${
+          quiet ? "pointer-events-none opacity-0" : "opacity-100"
         }`}
       >
-        <div className="max-w-xl">
-          <h1 className="text-[clamp(2.4rem,7vw,4.6rem)] leading-[0.95] font-semibold tracking-[-0.03em] text-ink">
-            OSS City
+        <div className="pointer-events-auto max-h-full w-full max-w-xl overflow-y-auto pr-2 [scrollbar-width:thin]">
+          <p className="text-[12.5px] tracking-wide text-ink-3 uppercase">
+            {stats ? `${count(stats.projects)} open source projects, measured by Contributable` : "Open source projects, measured by Contributable"}
+          </p>
+          <h1 className="mt-2 text-[clamp(1.9rem,4.2vw,3rem)] leading-[1.02] font-semibold tracking-[-0.025em] text-ink">
+            Find a project that answers your first pull request.
           </h1>
-          <p className="mt-3 max-w-md text-[15px] leading-relaxed text-ink-2 sm:text-base">{TAGLINE}</p>
+          <p className="mt-3 max-w-md text-[14.5px] leading-relaxed text-ink-2">
+            Each building is a repository from a Google Summer of Code organisation. Tall means busy.
+            Lit windows mean newcomers get a reply within 48 hours. Dark towers ignore them.
+          </p>
           <SearchBox disabled={preparing} />
+          <Friendliest />
           <Actions disabled={preparing} />
           <Stats stats={stats} preparing={preparing} loadError={loadError} />
           <p className="mt-3 text-[12px] text-ink-3">
@@ -108,7 +116,15 @@ function SearchBox({ disabled }: { disabled: boolean }) {
   const query = useCity((s) => s.query);
   const setQuery = useCity((s) => s.setQuery);
   const matches = useCity((s) => s.matches);
+  const feed = useCity((s) => s.feed);
+  const plan = useCity((s) => s.plan);
+  const frame = useCity((s) => s.frame);
+  const select = useCity((s) => s.select);
+  const flyTo = useCity((s) => s.flyTo);
+  const route = useCity((s) => s.route);
+  const startTour = useCity((s) => s.startTour);
   const input = useRef<HTMLInputElement>(null);
+  const [open, setOpen] = useState(false);
 
   // "/" focuses the search from anywhere.
   useEffect(() => {
@@ -124,75 +140,247 @@ function SearchBox({ disabled }: { disabled: boolean }) {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  // Fly to whatever matches, a moment after typing stops.
+  useEffect(() => {
+    if (!matches || matches.size === 0) return;
+    const timer = setTimeout(() => frame([...matches]), 350);
+    return () => clearTimeout(timer);
+  }, [matches, frame]);
+
+  // The best matches, friendliest first, then the most starred.
+  const results = useMemo(() => {
+    if (!feed || !matches || matches.size === 0) return [];
+    return [...matches]
+      .map((i) => ({ i, repo: feed.repos[i], score: friendliness(feed.repos[i]) }))
+      .sort((a, b) => (b.score ?? -1) - (a.score ?? -1) || b.repo.stars - a.repo.stars)
+      .slice(0, 6);
+  }, [feed, matches]);
+
+  const districts = useMemo(() => {
+    if (!plan || !matches || matches.size === 0) return [];
+    const counts = new Map<string, number>();
+    for (const b of plan.buildings) {
+      if (matches.has(b.index)) counts.set(b.district, (counts.get(b.district) ?? 0) + 1);
+    }
+    return [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 4);
+  }, [plan, matches]);
+
+  const go = (i: number) => {
+    const b = plan?.buildings[i];
+    if (!b) return;
+    select(i);
+    flyTo(buildingGoal(b));
+    setOpen(false);
+  };
+
   return (
-    <form
-      role="search"
-      className="pointer-events-auto mt-5 flex max-w-md items-center gap-2"
-      onSubmit={(e) => e.preventDefault()}
-    >
-      <label className="glass-strong flex flex-1 items-center gap-2.5 rounded-2xl px-4 py-3 focus-within:border-accent/60">
-        <svg viewBox="0 0 24 24" className="size-4 shrink-0 text-ink-3" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
-          <circle cx="10.5" cy="10.5" r="6.5" />
-          <path d="m20 20-4.3-4.3" strokeLinecap="round" />
-        </svg>
-        <span className="sr-only">Light up your stack</span>
-        <input
-          ref={input}
-          type="search"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Light up your stack"
-          disabled={disabled}
-          autoComplete="off"
-          spellCheck={false}
-          className="min-w-0 flex-1 bg-transparent text-[15px] text-ink outline-none placeholder:text-ink-3"
-        />
-        {query ? (
-          <span className="num shrink-0 text-[12px] text-accent" aria-live="polite">
-            {matches ? `${count(matches.size)} ${matches.size === 1 ? "match" : "matches"}` : ""}
-          </span>
-        ) : (
-          <kbd className="hidden rounded-md border border-hair px-1.5 py-0.5 text-[11px] text-ink-3 sm:inline">/</kbd>
-        )}
-      </label>
-    </form>
+    <div className="pointer-events-auto mt-4 max-w-md">
+      <form
+        role="search"
+        className="relative flex items-center gap-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (results[0]) go(results[0].i);
+        }}
+      >
+        <label className="glass-strong flex flex-1 items-center gap-2.5 rounded-2xl px-4 py-3 focus-within:border-accent/60">
+          <svg viewBox="0 0 24 24" className="size-4 shrink-0 text-ink-3" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+            <circle cx="10.5" cy="10.5" r="6.5" />
+            <path d="m20 20-4.3-4.3" strokeLinecap="round" />
+          </svg>
+          <span className="sr-only">Light up your stack</span>
+          <input
+            ref={input}
+            type="search"
+            value={query}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setOpen(true);
+            }}
+            onFocus={() => setOpen(true)}
+            onBlur={() => setTimeout(() => setOpen(false), 150)}
+            placeholder="Light up your stack: python, django"
+            disabled={disabled}
+            autoComplete="off"
+            spellCheck={false}
+            className="min-w-0 flex-1 bg-transparent text-[15px] text-ink outline-none placeholder:text-ink-3"
+          />
+          {query ? (
+            <span className="num shrink-0 text-[12px] text-accent" aria-live="polite">
+              {matches ? `${count(matches.size)} ${matches.size === 1 ? "match" : "matches"}` : ""}
+            </span>
+          ) : (
+            <kbd className="hidden rounded-md border border-hair px-1.5 py-0.5 text-[11px] text-ink-3 sm:inline">/</kbd>
+          )}
+        </label>
+        {open && query && matches ? (
+          <div id="search-results" className="glass-strong rise absolute inset-x-0 top-full z-30 mt-2 rounded-2xl p-2">
+          {matches.size === 0 ? (
+            <p className="px-2 py-1.5 text-[13px] text-ink-3">No building matches that. Try a language, framework or topic.</p>
+          ) : (
+            <>
+              <p className="px-2 pb-1 text-[11.5px] text-ink-3">
+                Lit in {districts.map(([name, n]) => `${name} (${n})`).join(", ")}. Friendliest first:
+              </p>
+              <ul>
+                {results.map(({ i, repo }) => (
+                  <li key={repo.id}>
+                    <button
+                      type="button"
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => go(i)}
+                      className="flex w-full items-center justify-between gap-3 rounded-xl px-2 py-1.5 text-left hover:bg-hair"
+                    >
+                      <span className="truncate text-[13.5px] text-ink">{repo.id}</span>
+                      <span className="num shrink-0 text-[12px] text-ink-3">
+                        {repo.replyHours == null ? "no reply data" : `replies in ${hours(repo.replyHours)}`}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+          </div>
+        ) : null}
+      </form>
+      <DistrictChips />
+      {query.trim() && route.length > 1 && feed ? (
+        <div className="glass mt-3 rounded-2xl p-3">
+          <div className="flex items-baseline justify-between gap-3">
+            <h2 className="text-[12px] tracking-wide text-ink-3 uppercase">Your route through {query.trim()}</h2>
+            <button
+              type="button"
+              onClick={() => startTour(route.map((s) => s.index), `Your route through ${query.trim()}`, route.map((s) => s.why))}
+              className="shrink-0 rounded-full bg-accent px-3 py-1 text-[12px] font-medium text-accent-ink hover:scale-[1.03]"
+            >
+              Fly the route
+            </button>
+          </div>
+          <ol className="mt-1.5 space-y-1">
+            {route.map((stop, n) => (
+              <li key={stop.index}>
+                <button type="button" onClick={() => go(stop.index)} className="flex w-full items-start gap-2 text-left hover:text-accent">
+                  <span className="num mt-0.5 w-4 shrink-0 text-[11px] text-ink-3">{n + 1}</span>
+                  <span className="min-w-0">
+                    <span className="block truncate text-[13px] text-ink">{feed.repos[stop.index].id}</span>
+                    <span className="block text-[11.5px] leading-snug text-ink-3">{stop.why}</span>
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ol>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/** One chip per big district, so a newcomer can jump straight to a language. */
+function DistrictChips() {
+  const plan = useCity((s) => s.plan);
+  const setQuery = useCity((s) => s.setQuery);
+  const query = useCity((s) => s.query);
+  const sendCommand = useCity((s) => s.sendCommand);
+  if (!plan) return null;
+  const top = [...plan.districts]
+    .filter((d) => d.name !== "Other languages")
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 8);
+  return (
+    <div className="mt-2.5 flex flex-wrap items-center gap-1.5" aria-label="Jump to a district">
+      {top.map((d) => {
+        const active = query.trim().toLowerCase() === d.name.toLowerCase();
+        return (
+          <button
+            key={d.name}
+            type="button"
+            aria-pressed={active}
+            onClick={() => {
+              if (active) {
+                setQuery("");
+                sendCommand({ kind: "overview" });
+              } else setQuery(d.name);
+            }}
+            className={`rounded-full border px-2.5 py-1 text-[12px] transition-colors ${
+              active ? "border-accent bg-accent text-accent-ink" : "border-hair-strong text-ink-2 hover:border-accent hover:text-ink"
+            }`}
+          >
+            {d.name} <span className="num opacity-70">{d.count}</span>
+          </button>
+        );
+      })}
+    </div>
   );
 }
 
 function Stats({ stats, preparing, loadError }: { stats: CityStats | null; preparing: boolean; loadError: boolean }) {
   if (loadError && !stats) {
     return (
-      <p className="mt-6 text-[13px] text-ink-2" role="status">
+      <p className="mt-4 text-[13px] text-ink-2" role="status">
         Contributable&apos;s data could not be loaded right now. Try again in a few minutes.
       </p>
     );
   }
   if (!stats) {
     return (
-      <p className="mt-6 text-[13px] text-ink-2" role="status">
+      <p className="mt-4 text-[13px] text-ink-2" role="status">
         {preparing ? "Preparing the city. Contributable is publishing its first index." : ""}
       </p>
     );
   }
-  const items: [string, string][] = [
-    [count(stats.projects), "projects in the city"],
-    [
-      stats.within7dShare == null ? "No data" : `${Math.round(stats.within7dShare * 100)}%`,
-      `of outside PRs answered within 7 days, across ${count(stats.within7dProjects)} projects`,
-    ],
-    [count(stats.freeIssues), "free first issues right now"],
-  ];
   return (
-    <dl className="mt-5 grid max-w-lg grid-cols-3 gap-2 sm:mt-6 sm:gap-3">
-      {items.map(([value, label]) => (
-        <div key={label} className="glass rounded-2xl px-2.5 py-2.5 sm:px-3.5 sm:py-3">
-          <dd className="num text-[clamp(1.3rem,3.2vw,1.9rem)] leading-none font-semibold tracking-tight text-ink">
-            {value}
-          </dd>
-          <dt className="mt-1 text-[10.5px] leading-snug text-ink-3 sm:mt-1.5 sm:text-[11.5px]">{label}</dt>
-        </div>
-      ))}
-    </dl>
+    <p className="num mt-4 text-[13px] text-ink-2">
+      <span className="text-ink">{stats.within7dShare == null ? "No data" : `${Math.round(stats.within7dShare * 100)}%`}</span> of outside
+      pull requests get a reply within 7 days, across {count(stats.within7dProjects)} projects with enough data.{" "}
+      <span className="text-ink">{count(stats.freeIssues)}</span> free first issues right now.
+    </p>
+  );
+}
+
+/** The five friendliest projects, right on the first screen, each one click away. */
+function Friendliest() {
+  const feed = useCity((s) => s.feed);
+  const plan = useCity((s) => s.plan);
+  const tour = useCity((s) => s.tour);
+  const query = useCity((s) => s.query);
+  const select = useCity((s) => s.select);
+  const flyTo = useCity((s) => s.flyTo);
+  const setMode = useCity((s) => s.setMode);
+  if (!feed || !plan || tour.length === 0 || query.trim()) return null;
+  return (
+    <div className="pointer-events-auto mt-4">
+      <div className="flex items-baseline justify-between">
+        <h2 className="text-[12px] tracking-wide text-ink-3 uppercase">Friendliest right now</h2>
+        <button type="button" onClick={() => setMode("tour")} className="text-[12.5px] text-accent hover:underline">
+          Tour all ten
+        </button>
+      </div>
+      <ol className="mt-1.5 divide-y divide-hair">
+        {tour.slice(0, 5).map((i, n) => {
+          const r = feed.repos[i];
+          const b = plan.buildings[i];
+          return (
+            <li key={r.id}>
+              <button
+                type="button"
+                onClick={() => {
+                  select(i);
+                  flyTo(buildingGoal(b));
+                }}
+                className="flex w-full items-center gap-3 py-1.5 text-left hover:text-accent"
+              >
+                <span className="num w-4 shrink-0 text-[11px] text-ink-3">{n + 1}</span>
+                <span className="min-w-0 flex-1 truncate text-[13.5px] text-ink">{r.id}</span>
+                <span className="num shrink-0 text-[12px] text-ink-3">
+                  {hours(r.replyHours)} reply, {r.available} free {r.available === 1 ? "issue" : "issues"}
+                </span>
+              </button>
+            </li>
+          );
+        })}
+      </ol>
+    </div>
   );
 }
 
@@ -228,7 +416,7 @@ function Legend() {
 function Actions({ disabled }: { disabled: boolean }) {
   const setMode = useCity((s) => s.setMode);
   return (
-    <div className="pointer-events-auto mt-3 flex flex-wrap items-center gap-2">
+    <div className="pointer-events-auto mt-4 flex flex-wrap items-center gap-2">
       <button
         type="button"
         disabled={disabled}
@@ -265,7 +453,7 @@ function Hint() {
   if (!shown) return null;
   return (
     <p className="glass rise pointer-events-auto absolute right-4 bottom-20 hidden rounded-full px-4 py-2 text-[12.5px] text-ink-2 sm:bottom-24 sm:right-6 md:block">
-      Drag to fly, scroll to zoom, click a building for its card, double-click to focus.
+      Drag to orbit, right-drag to slide, scroll to zoom, click a building for its card.
       <button type="button" onClick={() => setShown(false)} className="ml-2 text-ink-3 hover:text-ink" aria-label="Dismiss">
         x
       </button>
