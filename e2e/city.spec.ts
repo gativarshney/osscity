@@ -7,7 +7,7 @@ import { expect, test } from "@playwright/test";
 test("loads, searches, opens a card and links to Contributable", async ({ page }) => {
   await page.goto("/");
 
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText(/answers your first pull request/);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(/let newcomers in/);
   await expect(page.getByText(/open source projects, measured by Contributable/i)).toBeVisible();
   await expect(page.getByText(/Data from Contributable, updated/)).toBeVisible();
   await expect(page.getByRole("link", { name: "Powered by Contributable" })).toHaveAttribute(

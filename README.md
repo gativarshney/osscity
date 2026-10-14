@@ -28,6 +28,20 @@ repository's page on Contributable.
 
 ## What the city does that a list cannot
 
+- **Lenses**: the bar at the top changes what the windows show. Replies (answered within 48 hours),
+  Activity (commits in 90 days), Free issues (unclaimed beginner issues), Merged (outside pull
+  requests merged) and Evidence (how many outside pull requests the figures rest on). Height is
+  always activity. Withheld figures always get their own muted colour, never a low value.
+- **Districts as an observatory**: click a district plate, its painted name or a chip to open its
+  figures: share answered within 7 days, typical first reply, outside merge rate, free issues,
+  ghost towns, each with the sample it rests on and its rank among districts. Districts can group
+  by language or by Google Summer of Code organisation.
+- **Rank districts**: which parts of open source answer newcomers, where the first reply is
+  fastest, where outside work gets merged, where there is most to pick up. Only districts with at
+  least five judged projects are ranked.
+- **Shareable views**: lens, grouping, district and search all live in the URL, for example
+  `/?lens=issues&group=org&district=NumFOCUS`.
+
 - **Light up your stack**: type "python, django" and the matching districts glow, the camera flies
   to them, and the best matches are listed friendliest first. Chips under the box jump straight to
   a language district.

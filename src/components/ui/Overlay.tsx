@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { friendliness } from "@/lib/city/encode";
+import { lensById } from "@/lib/city/lens";
 import type { CityStats } from "@/lib/city/stats";
 import { compactDate, count, hours } from "@/lib/format";
 import { buildingGoal, useCity } from "@/lib/store";
@@ -24,8 +25,10 @@ export function Overlay({ stats, generatedAt, loadError, viewReason }: Props) {
   const finishIntro = useCity((s) => s.finishIntro);
   const selected = useCity((s) => s.selected);
   const mode = useCity((s) => s.mode);
+  const district = useCity((s) => s.district);
+  const ranking = useCity((s) => s.ranking);
   const preparing = !feed && !loadError;
-  const quiet = selected != null || mode !== "explore";
+  const quiet = selected != null || mode !== "explore" || district != null || ranking;
 
   return (
     <div className="pointer-events-none absolute inset-0 z-20 flex flex-col">
@@ -59,11 +62,12 @@ export function Overlay({ stats, generatedAt, loadError, viewReason }: Props) {
             {stats ? `${count(stats.projects)} open source projects, measured by Contributable` : "Open source projects, measured by Contributable"}
           </p>
           <h1 className="mt-2 text-[clamp(1.9rem,4.2vw,3rem)] leading-[1.02] font-semibold tracking-[-0.025em] text-ink">
-            Find a project that answers your first pull request.
+            See which open source projects actually let newcomers in.
           </h1>
           <p className="mt-3 max-w-md text-[14.5px] leading-relaxed text-ink-2">
-            Each building is a repository from a Google Summer of Code organisation. Tall means busy.
-            Lit windows mean newcomers get a reply within 48 hours. Dark towers ignore them.
+            A map of 1,587 repositories from Google Summer of Code organisations, measured by Contributable.
+            Districts are languages or organisations. Tall means busy. Lit windows mean newcomers get a reply
+            within 48 hours. Switch the lens at the top to see activity, free issues, merged work or evidence.
           </p>
           <SearchBox disabled={preparing} />
           <Friendliest />
@@ -83,7 +87,7 @@ export function Overlay({ stats, generatedAt, loadError, viewReason }: Props) {
         </div>
       </div>
 
-      {selected == null && mode === "explore" ? <Legend /> : null}
+      {selected == null && mode === "explore" && district == null && !ranking ? <Legend /> : null}
       {introDone && !preparing && mode === "explore" ? <Hint /> : null}
 
       {!introDone && !preparing ? (
@@ -276,31 +280,29 @@ function SearchBox({ disabled }: { disabled: boolean }) {
   );
 }
 
-/** One chip per big district, so a newcomer can jump straight to a language. */
+/** One chip per big district, so a newcomer can jump straight to a language or organisation. */
 function DistrictChips() {
   const plan = useCity((s) => s.plan);
-  const setQuery = useCity((s) => s.setQuery);
-  const query = useCity((s) => s.query);
-  const sendCommand = useCity((s) => s.sendCommand);
+  const district = useCity((s) => s.district);
+  const openDistrict = useCity((s) => s.openDistrict);
+  const frame = useCity((s) => s.frame);
   if (!plan) return null;
   const top = [...plan.districts]
-    .filter((d) => d.name !== "Other languages")
+    .filter((d) => d.name !== "Other languages" && d.name !== "Other organisations")
     .sort((a, b) => b.count - a.count)
     .slice(0, 8);
   return (
     <div className="mt-2.5 flex flex-wrap items-center gap-1.5" aria-label="Jump to a district">
       {top.map((d) => {
-        const active = query.trim().toLowerCase() === d.name.toLowerCase();
+        const active = district === d.name;
         return (
           <button
             key={d.name}
             type="button"
             aria-pressed={active}
             onClick={() => {
-              if (active) {
-                setQuery("");
-                sendCommand({ kind: "overview" });
-              } else setQuery(d.name);
+              openDistrict(d.name);
+              frame(plan.buildings.filter((b) => b.district === d.name).map((b) => b.index));
             }}
             className={`rounded-full border px-2.5 py-1 text-[12px] transition-colors ${
               active ? "border-accent bg-accent text-accent-ink" : "border-hair-strong text-ink-2 hover:border-accent hover:text-ink"
@@ -385,28 +387,21 @@ function Friendliest() {
 }
 
 function Legend() {
+  const lensId = useCity((s) => s.lens);
+  const lens = lensById(lensId);
   return (
     <aside
       aria-label="How to read the city"
-      className="glass pointer-events-auto absolute top-16 right-4 hidden w-56 rounded-2xl p-3.5 text-[12.5px] leading-snug text-ink-2 sm:top-20 sm:right-6 md:block"
+      className="glass pointer-events-auto absolute top-28 right-4 hidden w-60 rounded-2xl p-3.5 text-[12.5px] leading-snug text-ink-2 sm:top-24 sm:right-6 md:block"
     >
-      <ul className="space-y-2.5">
-        <li className="flex items-start gap-2.5">
-          <span className="mt-0.5 flex h-5 w-4 items-end justify-center gap-px" aria-hidden="true">
-            <span className="h-2 w-1 bg-ink-3" />
-            <span className="h-5 w-1 bg-ink-2" />
-            <span className="h-3 w-1 bg-ink-3" />
-          </span>
-          <span><span className="text-ink">Height</span> is how active a project is.</span>
-        </li>
-        <li className="flex items-start gap-2.5">
-          <span className="mt-0.5 size-4 rounded-sm bg-window shadow-[0_0_10px_var(--window)]" aria-hidden="true" />
-          <span><span className="text-ink">Lit windows</span> reply to outside pull requests within 48 hours.</span>
-        </li>
-        <li className="flex items-start gap-2.5">
-          <span className="mt-0.5 size-4 rounded-sm border border-hair-strong bg-[#0d1120]" aria-hidden="true" />
-          <span><span className="text-ink">Dark towers</span> rarely answer newcomers.</span>
-        </li>
+      <p className="mb-2 text-[11px] tracking-wide text-ink-3 uppercase">Height is activity. Windows show {lens.label.toLowerCase()}.</p>
+      <ul className="space-y-2">
+        {lens.legend.map((entry) => (
+          <li key={entry.label} className="flex items-start gap-2.5">
+            <span className="mt-0.5 size-3.5 shrink-0 rounded-sm" style={{ background: entry.colour, boxShadow: `0 0 8px ${entry.colour}66` }} aria-hidden="true" />
+            <span>{entry.label}</span>
+          </li>
+        ))}
       </ul>
     </aside>
   );
