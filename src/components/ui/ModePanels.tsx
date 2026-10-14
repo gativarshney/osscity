@@ -151,7 +151,7 @@ export function TourCaption() {
   const org = repo.gsoc ? (feed.orgs[repo.gsoc] ?? repo.gsoc) : null;
 
   return (
-    <div className="pointer-events-none absolute inset-x-0 bottom-16 z-30 flex justify-center px-3 sm:bottom-24" aria-live="polite">
+    <div className="pointer-events-none absolute inset-x-0 top-14 z-30 flex justify-center px-3 sm:top-20" aria-live="polite">
       <section
         key={repo.id}
         aria-label={`Tour stop ${step + 1} of ${tour.length}`}

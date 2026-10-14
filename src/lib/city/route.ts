@@ -19,9 +19,11 @@ export function planRoute(repos: CityRepo[], indices: number[], length = ROUTE_L
     .map((index) => ({ index, repo: repos[index], score: friendliness(repos[index]) }))
     .filter((x): x is { index: number; repo: CityRepo; score: number } => x.repo != null && x.score != null)
     .sort((a, b) => b.score - a.score || b.repo.available - a.repo.available);
-  // Prefer a project with something free to pick up as the first stop.
+  // The first stop is the smallest welcoming project with something free to pick up.
   const pool = scored.slice(0, Math.max(length * 2, 6));
-  const first = pool.find((x) => x.repo.available > 0) ?? pool[0];
+  const withIssues = pool.filter((x) => x.repo.available > 0);
+  const first =
+    [...withIssues].sort((a, b) => (a.repo.commits90d ?? 0) - (b.repo.commits90d ?? 0))[0] ?? pool[0];
   if (!first) return [];
   const rest = pool
     .filter((x) => x !== first)
