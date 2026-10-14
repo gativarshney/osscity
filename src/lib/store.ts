@@ -23,6 +23,9 @@ export interface CameraGoal {
   serial: number;
 }
 
+/** How long the tour rests at each stop before moving on, in milliseconds. */
+export const TOUR_DWELL_MS = 4500;
+
 interface CityState {
   feed: CityFeed | null;
   plan: CityPlan | null;
@@ -52,8 +55,14 @@ interface CityState {
   setMode: (mode: Mode) => void;
   /** Indices of the ten friendliest, in tour order. */
   tour: number[];
+  /** Current stop. Equal to tour.length once the tour has finished. */
   tourStep: number;
+  /** Whether the tour moves on by itself. */
+  tourPlaying: boolean;
   setTourStep: (step: number) => void;
+  setTourPlaying: (playing: boolean) => void;
+  nextStop: () => void;
+  previousStop: () => void;
   /** Indices of the ghost towns. */
   ghosts: number[];
   /** Up to two picks for the comparison. */
@@ -106,14 +115,27 @@ export const useCity = create<CityState>((set, get) => ({
 
   mode: "explore",
   setMode: (mode) => {
-    const changes: Partial<CityState> = { mode, tourStep: 0 };
+    const changes: Partial<CityState> = { mode, tourStep: 0, tourPlaying: mode === "tour" };
     if (mode !== "compare") changes.compare = [];
-    if (mode === "tour") changes.selected = null;
+    if (mode === "tour") {
+      changes.selected = null;
+      changes.introDone = true;
+    }
     set(changes);
   },
   tour: [],
   tourStep: 0,
+  tourPlaying: false,
   setTourStep: (tourStep) => set({ tourStep }),
+  setTourPlaying: (tourPlaying) => set({ tourPlaying }),
+  nextStop: () => {
+    const { tourStep, tour } = get();
+    set({ tourStep: Math.min(tour.length, tourStep + 1) });
+  },
+  previousStop: () => {
+    const { tourStep } = get();
+    set({ tourStep: Math.max(0, tourStep - 1), tourPlaying: false });
+  },
   ghosts: [],
   compare: [],
   togglePick: (index) => {
@@ -133,4 +155,19 @@ export const useCity = create<CityState>((set, get) => ({
 export function repoAt(feed: CityFeed | null, index: number | null): CityRepo | null {
   if (!feed || index == null) return null;
   return feed.repos[index] ?? null;
+}
+
+/** A camera goal that frames one building nicely. */
+export function buildingGoal(
+  b: { x: number; z: number; height: number },
+  azimuth = Math.PI / 5,
+  seconds = 1.2,
+): Omit<CameraGoal, "serial"> {
+  return {
+    target: [b.x, b.height * 0.45, b.z],
+    distance: 14 + b.height * 1.4,
+    azimuth,
+    elevation: 0.48,
+    seconds,
+  };
 }

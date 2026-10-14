@@ -79,22 +79,16 @@ export function FlatMap({ feed, plan }: Props) {
   }, [goal?.serial]);
   useEffect(() => {
     if (mode !== "tour" || tour.length === 0) return;
+    if (tourStep >= tour.length) {
+      fit();
+      return;
+    }
     const b = plan.buildings[tour[tourStep]];
     const el = canvas.current?.parentElement;
     if (!b || !el) return;
     const scale = 16;
     view.current = { x: el.clientWidth / 2 - b.x * scale, y: el.clientHeight / 2 - b.z * scale, scale };
     redraw();
-    const timer = setTimeout(() => {
-      const s = useCity.getState();
-      if (s.mode !== "tour") return;
-      if (tourStep + 1 < tour.length) s.setTourStep(tourStep + 1);
-      else {
-        s.setMode("explore");
-        s.resetView();
-      }
-    }, 2000);
-    return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, tour, tourStep]);
 

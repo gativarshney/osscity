@@ -4,7 +4,7 @@ import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import type { CityPlan } from "@/lib/city/layout";
-import { useCity, type CameraGoal } from "@/lib/store";
+import { buildingGoal, useCity, type CameraGoal } from "@/lib/store";
 
 /** Where the camera sits: a point on the ground it looks at, and a spherical offset. */
 interface Pose {
@@ -133,39 +133,19 @@ export function CameraRig({ plan, skipIntro }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resetSerial]);
 
-  // The tour: fly past the friendliest ten, pausing at each.
+  // The tour: fly to each stop; the caption decides when to move on.
   const mode = useCity((s) => s.mode);
   const tour = useCity((s) => s.tour);
   const tourStep = useCity((s) => s.tourStep);
   useEffect(() => {
     if (mode !== "tour" || tour.length === 0) return;
-    const index = tour[tourStep];
-    const b = plan.buildings[index];
+    if (tourStep >= tour.length) {
+      fly(overviewPose(plan, false), 1.6);
+      return;
+    }
+    const b = plan.buildings[tour[tourStep]];
     if (!b) return;
-    let timer: ReturnType<typeof setTimeout> | null = null;
-    fly(
-      {
-        target: new THREE.Vector3(b.x, b.height * 0.45, b.z),
-        distance: 15 + b.height * 1.5,
-        azimuth: -0.9 + tourStep * 0.55,
-        elevation: 0.5,
-      },
-      1.15,
-      () => {
-        timer = setTimeout(() => {
-          const s = useCity.getState();
-          if (s.mode !== "tour") return;
-          if (tourStep + 1 < tour.length) s.setTourStep(tourStep + 1);
-          else {
-            s.setMode("explore");
-            s.resetView();
-          }
-        }, 850);
-      },
-    );
-    return () => {
-      if (timer) clearTimeout(timer);
-    };
+    fly(toPose({ ...buildingGoal(b, -0.9 + tourStep * 0.55, 1.1), serial: 0 }), 1.1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mode, tour, tourStep]);
 

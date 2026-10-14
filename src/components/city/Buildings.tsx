@@ -35,6 +35,7 @@ function stateOf(
     return 0;
   }
   if (s.mode === "tour") {
+    if (s.tourStep >= s.tour.length) return s.tour.includes(index) ? 3 : 1;
     if (s.tour[s.tourStep] === index) return 3;
     return s.tour.includes(index) ? 2 : 1;
   }
