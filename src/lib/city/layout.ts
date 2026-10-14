@@ -42,21 +42,42 @@ export interface CityPlan {
   halfDepth: number;
 }
 
+/** Districts can group by main language or by Google Summer of Code organisation. */
+export type GroupBy = "language" | "org";
+export const OTHER_ORGS = "Other organisations";
+
+export interface PlanOptions {
+  groupBy?: GroupBy;
+  /** Organisation slug to display name, for org districts. */
+  orgNames?: Record<string, string>;
+}
+
 export function districtOf(repo: Pick<CityRepo, "lang">, counts: Map<string, number>): string {
   const main = repo.lang[0];
   if (!main) return OTHER_DISTRICT;
   return (counts.get(main) ?? 0) >= MIN_DISTRICT_SIZE ? main : OTHER_DISTRICT;
 }
 
-function groupByDistrict(repos: CityRepo[]): Map<string, number[]> {
+/** The key a repository groups under, or null when it has none. */
+function groupKey(repo: CityRepo, groupBy: GroupBy): string | null {
+  return groupBy === "org" ? repo.gsoc : (repo.lang[0] ?? null);
+}
+
+function groupByDistrict(repos: CityRepo[], options: PlanOptions): Map<string, number[]> {
+  const groupBy = options.groupBy ?? "language";
+  const other = groupBy === "org" ? OTHER_ORGS : OTHER_DISTRICT;
   const counts = new Map<string, number>();
   for (const repo of repos) {
-    const main = repo.lang[0];
-    if (main) counts.set(main, (counts.get(main) ?? 0) + 1);
+    const key = groupKey(repo, groupBy);
+    if (key) counts.set(key, (counts.get(key) ?? 0) + 1);
   }
   const groups = new Map<string, number[]>();
   repos.forEach((repo, index) => {
-    const name = districtOf(repo, counts);
+    const key = groupKey(repo, groupBy);
+    let name = other;
+    if (key && (counts.get(key) ?? 0) >= MIN_DISTRICT_SIZE) {
+      name = groupBy === "org" ? (options.orgNames?.[key] ?? key) : key;
+    }
     const list = groups.get(name) ?? [];
     list.push(index);
     groups.set(name, list);
@@ -79,8 +100,8 @@ interface Block {
   depth: number;
 }
 
-export function planCity(repos: CityRepo[]): CityPlan {
-  const groups = [...groupByDistrict(repos).entries()].sort(
+export function planCity(repos: CityRepo[], options: PlanOptions = {}): CityPlan {
+  const groups = [...groupByDistrict(repos, options).entries()].sort(
     (a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]),
   );
 
