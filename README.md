@@ -26,19 +26,30 @@ Click a building for its card: first reply time, outside pull requests merged, f
 the busiest reply hours in your time zone, the organisation and years, and a button that opens the
 repository's page on Contributable.
 
-## Modes
+## What the city does that a list cannot
 
-- **Tour the 10 friendliest**: a guided flight past the ten most welcoming projects, with a caption
-  at each stop and a summary at the end. Arrow keys move, space pauses.
-- **Ghost towns**: highlights popular projects that rarely answer newcomers.
-- **Compare**: pick two buildings and see them side by side.
+- **Light up your stack**: type "python, django" and the matching districts glow, the camera flies
+  to them, and the best matches are listed friendliest first. Chips under the box jump straight to
+  a language district.
+- **Your route**: for any stack, a short path on the ground from the easiest first project (free
+  issues, fast replies) up to a busy one. "Fly the route" takes you stop by stop with a reason at
+  each.
+- **Awake now**: lights the projects whose maintainers usually reply at this hour, in your time
+  zone, so you open a pull request while someone is there. Step the hour back and forth to plan.
+- **Friendliest projects**: a guided flight past the ten most welcoming projects, with a caption at
+  each stop and a summary at the end. Arrow keys move, space pauses.
+- **Who ignores newcomers**: popular projects where at most a third of outside pull requests get a
+  reply within a week.
+- **Compare two**: pick two buildings and see their numbers side by side.
 - **2D map**: the same plan on a flat canvas. Used automatically without WebGL, with reduced motion
   on, or on a weak device, and available any time.
 - **Postcard**: saves the current view as a high resolution image with both marks.
 - **List view**: the same data as an accessible, sortable table at `/list`.
 
-Keyboard: `/` search, `T` tour, `G` ghost towns, `C` compare, `M` map, `R` reset, `P` postcard,
-arrows or `WASD` fly, `Q` and `E` turn, `+` and `-` zoom, `Esc` close.
+Controls: drag to orbit, right-drag or shift-drag to slide, scroll or pinch to zoom, double-click a
+building to focus it. The view controls at the bottom right give Overview, Top and Street views.
+Keyboard: `/` search, `T` tour, `A` awake now, `G` ghost towns, `C` compare, `M` map,
+`R` reset, `P` postcard, arrows or `WASD` fly, `Q` and `E` turn, `+` and `-` zoom, `Esc` close.
 
 ## Where the data comes from
 

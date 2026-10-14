@@ -113,28 +113,29 @@ export const buildingFragment = /* glsl */ `
 
     // Dark unlit panes, slightly reflective of the sky.
     colour = mix(colour, vFacade * 0.6 + vec3(0.01, 0.015, 0.03), pane * (1.0 - up) * 0.6);
-    // Lit windows.
-    colour += vWindow * lit * 1.6;
 
     // Rim light from the camera direction so edges read against the dark.
     vec3 viewDir = normalize(uCamera - vWorld);
     float rim = pow(1.0 - max(dot(viewDir, n), 0.0), 3.0);
 
+    float litGain = 1.6;
     if (vState > 2.5) {
-      // Selected: a slow accent pulse and a strong rim.
-      float pulse = 0.5 + 0.2 * sin(uTime * 2.5);
-      colour += uAccent * (pulse + rim * 0.9);
-      colour += vWindow * lit * 0.6;
+      // Selected or current stop: a slow accent pulse, a strong rim, brighter windows.
+      float beat = 0.45 + 0.2 * sin(uTime * 2.5);
+      colour += uAccent * (beat + rim * 0.9);
+      litGain = 2.2;
     } else if (vState > 1.5) {
-      // Highlighted by a search or mode.
-      colour += uAccent * (0.12 + rim * 0.5);
-      colour += vWindow * lit * 0.3;
+      // Highlighted by a search or a mode.
+      colour += uAccent * (0.14 + rim * 0.5);
+      litGain = 1.9;
     } else if (vState > 0.5) {
-      // Dimmed.
-      colour *= 0.38;
+      // Dimmed: the facade fades and most windows go out.
+      colour *= 0.3;
+      litGain = 0.25;
     } else {
       colour += uAccent * rim * 0.08;
     }
+    colour += vWindow * lit * litGain;
 
     gl_FragColor = vec4(colour, 1.0);
     #include <fog_fragment>

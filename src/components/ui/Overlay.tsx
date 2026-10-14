@@ -54,7 +54,7 @@ export function Overlay({ stats, generatedAt, loadError, viewReason }: Props) {
           quiet ? "pointer-events-none opacity-0" : "opacity-100"
         }`}
       >
-        <div className="pointer-events-auto max-h-full w-full max-w-xl overflow-y-auto pr-2 [scrollbar-width:thin]">
+        <div className="pointer-events-auto max-h-full w-full max-w-xl overflow-y-auto pr-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           <p className="text-[12.5px] tracking-wide text-ink-3 uppercase">
             {stats ? `${count(stats.projects)} open source projects, measured by Contributable` : "Open source projects, measured by Contributable"}
           </p>
@@ -245,7 +245,7 @@ function SearchBox({ disabled }: { disabled: boolean }) {
         ) : null}
       </form>
       <DistrictChips />
-      {query.trim() && route.length > 1 && feed ? (
+      {!open && query.trim() && route.length > 1 && feed ? (
         <div className="glass mt-3 rounded-2xl p-3">
           <div className="flex items-baseline justify-between gap-3">
             <h2 className="text-[12px] tracking-wide text-ink-3 uppercase">Your route through {query.trim()}</h2>
@@ -452,7 +452,7 @@ function Hint() {
   }, []);
   if (!shown) return null;
   return (
-    <p className="glass rise pointer-events-auto absolute right-4 bottom-20 hidden rounded-full px-4 py-2 text-[12.5px] text-ink-2 sm:bottom-24 sm:right-6 md:block">
+    <p className="glass rise pointer-events-auto absolute bottom-20 left-1/2 hidden -translate-x-1/2 rounded-full px-4 py-2 text-[12.5px] whitespace-nowrap text-ink-2 sm:bottom-24 md:block">
       Drag to orbit, right-drag to slide, scroll to zoom, click a building for its card.
       <button type="button" onClick={() => setShown(false)} className="ml-2 text-ink-3 hover:text-ink" aria-label="Dismiss">
         x

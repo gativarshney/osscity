@@ -8,7 +8,8 @@ export function ViewControls() {
   const feed = useCity((s) => s.feed);
   const mode = useCity((s) => s.mode);
   const view = useCity((s) => s.view);
-  if (!feed || mode === "tour") return null;
+  const selected = useCity((s) => s.selected);
+  if (!feed || mode !== "explore" || selected != null) return null;
   const flat = view === "2d";
 
   return (
