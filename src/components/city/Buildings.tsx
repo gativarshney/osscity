@@ -24,6 +24,7 @@ function stateOf(
     tour: number[];
     tourStep: number;
     ghosts: number[];
+    awake: number[];
     compare: number[];
     selected: number | null;
   },
@@ -40,6 +41,7 @@ function stateOf(
     return s.tour.includes(index) ? 2 : 1;
   }
   if (s.mode === "ghosts") return s.ghosts.includes(index) ? 2 : 1;
+  if (s.mode === "awake") return s.awake.includes(index) ? 2 : 1;
   if (s.matches) return s.matches.has(index) ? 2 : 1;
   return 0;
 }
@@ -124,14 +126,15 @@ export function Buildings({ feed, plan, interactive }: Props) {
   const tour = useCity((s) => s.tour);
   const tourStep = useCity((s) => s.tourStep);
   const ghosts = useCity((s) => s.ghosts);
+  const awake = useCity((s) => s.awake);
   const compare = useCity((s) => s.compare);
   const selected = useCity((s) => s.selected);
   useEffect(() => {
-    const s = { matches, mode, tour, tourStep, ghosts, compare, selected };
+    const s = { matches, mode, tour, tourStep, ghosts, awake, compare, selected };
     const arr = stateAttr.array as Float32Array;
     for (let i = 0; i < count; i++) arr[i] = stateOf(i, s);
     stateAttr.needsUpdate = true;
-  }, [matches, mode, tour, tourStep, ghosts, compare, selected, stateAttr, count]);
+  }, [matches, mode, tour, tourStep, ghosts, awake, compare, selected, stateAttr, count]);
 
   useFrame(({ clock, camera }) => {
     material.uniforms.uTime.value = clock.elapsedTime;

@@ -4,6 +4,8 @@ import { useEffect } from "react";
 import { lightFor } from "@/lib/city/encode";
 import type { CityRepo } from "@/lib/city/types";
 import { count, hours, percent } from "@/lib/format";
+import { busiestHours } from "@/lib/city/awake";
+import { friendliness } from "@/lib/city/encode";
 import { buildingGoal, TOUR_DWELL_MS, useCity } from "@/lib/store";
 import { CONTRIBUTABLE, contributableUrl } from "./RepoCard";
 
@@ -35,6 +37,8 @@ export function TourCaption() {
   const setMode = useCity((s) => s.setMode);
   const resetView = useCity((s) => s.resetView);
   const setTourStep = useCity((s) => s.setTourStep);
+  const title = useCity((s) => s.tourTitle);
+  const why = useCity((s) => s.tourWhy);
 
   const active = mode === "tour" && !!feed && tour.length > 0;
   const finished = active && step >= tour.length;
@@ -81,7 +85,7 @@ export function TourCaption() {
           aria-label="Tour summary"
           className="glass-strong rise pointer-events-auto w-full max-w-lg rounded-3xl p-5 sm:p-6"
         >
-          <p className="text-[12px] tracking-wide text-ink-3 uppercase">The ten friendliest</p>
+          <p className="text-[12px] tracking-wide text-ink-3 uppercase">{title}</p>
           <h2 className="mt-1 text-xl font-semibold tracking-tight text-ink">Pick one and open it in Contributable</h2>
           <p className="mt-1.5 text-[13.5px] text-ink-2">
             Each page shows the full report: who replies, how fast, what is free to pick up and how to get started.
@@ -167,7 +171,7 @@ export function TourCaption() {
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
               <p className="text-[12px] text-ink-3">
-                Stop {step + 1} of {tour.length}
+                {title}: stop {step + 1} of {tour.length}
                 {org ? ` from ${org}` : ""}
               </p>
               <h2 className="truncate text-[18px] font-semibold tracking-tight text-ink">{repo.id}</h2>
@@ -182,7 +186,7 @@ export function TourCaption() {
             </a>
           </div>
           <p className="mt-2 text-[13.5px] leading-snug text-ink-2">
-            Why it is friendly: {whyFriendly(repo)}
+            {why[step] ? why[step] : `Why it is friendly: ${whyFriendly(repo)}`}
           </p>
           <div className="mt-3 flex items-center gap-1.5">
             <Control label="Previous stop" onClick={previousStop} disabled={step === 0}>
@@ -301,5 +305,116 @@ export function ModeHint() {
     <span className="sr-only">
       {count(lit)} buildings have lit windows. {count(tour.length)} are on the tour.
     </span>
+  );
+}
+
+const pad = (n: number) => String(n).padStart(2, "0");
+
+/** The local hour label for a UTC hour, in the visitor's zone. */
+function localLabel(utcHour: number): string {
+  const d = new Date();
+  d.setUTCHours(utcHour, 0, 0, 0);
+  try {
+    return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  } catch {
+    return `${pad(utcHour)}:00 UTC`;
+  }
+}
+
+/**
+ * Awake now: who usually replies at this hour. A newcomer who opens a pull request
+ * while maintainers are around gets a first reply sooner.
+ */
+export function AwakePanel() {
+  const feed = useCity((s) => s.feed);
+  const plan = useCity((s) => s.plan);
+  const mode = useCity((s) => s.mode);
+  const hour = useCity((s) => s.awakeHour);
+  const awake = useCity((s) => s.awake);
+  const setHour = useCity((s) => s.setAwakeHour);
+  const select = useCity((s) => s.select);
+  const flyTo = useCity((s) => s.flyTo);
+  const setMode = useCity((s) => s.setMode);
+  const startTour = useCity((s) => s.startTour);
+  const matches = useCity((s) => s.matches);
+  if (mode !== "awake" || !feed || !plan) return null;
+
+  const pool = matches ? awake.filter((i) => matches.has(i)) : awake;
+  const best = [...pool]
+    .map((i) => ({ i, score: friendliness(feed.repos[i]) ?? -1 }))
+    .sort((a, b) => b.score - a.score || feed.repos[b.i].stars - feed.repos[a.i].stars)
+    .slice(0, 8);
+  const peak = busiestHours(feed.repos)[0];
+  const now = new Date().getUTCHours();
+
+  return (
+    <section
+      aria-label="Awake now"
+      className="glass-strong rise pointer-events-auto absolute inset-x-0 bottom-16 z-30 mx-3 max-h-[60dvh] overflow-y-auto rounded-3xl p-4 sm:inset-x-auto sm:right-6 sm:bottom-24 sm:mx-0 sm:w-[400px] sm:p-5"
+    >
+      <header className="flex items-start justify-between gap-3">
+        <div>
+          <h2 className="text-[16px] font-semibold tracking-tight text-ink">Awake now</h2>
+          <p className="mt-0.5 text-[12.5px] leading-snug text-ink-3">
+            Lit buildings usually reply at this hour. Open your pull request while someone is there.
+          </p>
+        </div>
+        <button type="button" onClick={() => setMode("explore")} className="rounded-full p-1.5 text-ink-3 hover:bg-hair hover:text-ink" aria-label="Close awake now">
+          <svg viewBox="0 0 20 20" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
+            <path d="m5 5 10 10M15 5 5 15" />
+          </svg>
+        </button>
+      </header>
+
+      <div className="mt-3 flex items-center gap-2">
+        <button type="button" onClick={() => setHour(hour - 1)} aria-label="One hour earlier" className="rounded-full border border-hair-strong px-2.5 py-1 text-[13px] text-ink-2 hover:text-ink">
+          -1 h
+        </button>
+        <p className="num flex-1 text-center text-[14px] text-ink">
+          {localLabel(hour)}{" "}
+          <span className="text-ink-3">{hour === now ? "(now)" : ""}</span>
+        </p>
+        <button type="button" onClick={() => setHour(hour + 1)} aria-label="One hour later" className="rounded-full border border-hair-strong px-2.5 py-1 text-[13px] text-ink-2 hover:text-ink">
+          +1 h
+        </button>
+      </div>
+      <p className="num mt-2 text-[13px] text-ink-2">
+        <span className="text-ink">{count(pool.length)}</span> projects{matches ? " in your stack" : ""} are usually replying at this hour.
+        {peak != null ? ` Busiest hour overall: ${localLabel(peak)}.` : ""}
+      </p>
+
+      <ol className="mt-3 divide-y divide-hair">
+        {best.map(({ i }) => {
+          const r = feed.repos[i];
+          const b = plan.buildings[i];
+          return (
+            <li key={r.id}>
+              <button
+                type="button"
+                onClick={() => {
+                  select(i);
+                  flyTo(buildingGoal(b));
+                }}
+                className="flex w-full items-center justify-between gap-3 py-2 text-left hover:text-accent"
+              >
+                <span className="truncate text-[13.5px] text-ink">{r.id}</span>
+                <span className="num shrink-0 text-[12px] text-ink-3">
+                  {hours(r.replyHours)} reply, {count(r.available)} free
+                </span>
+              </button>
+            </li>
+          );
+        })}
+      </ol>
+      {best.length > 1 ? (
+        <button
+          type="button"
+          onClick={() => startTour(best.slice(0, 6).map((x) => x.i), "Awake now")}
+          className="mt-3 w-full rounded-2xl bg-accent px-4 py-2.5 text-[13.5px] font-medium text-accent-ink hover:scale-[1.02]"
+        >
+          Fly past the ones awake now
+        </button>
+      ) : null}
+    </section>
   );
 }

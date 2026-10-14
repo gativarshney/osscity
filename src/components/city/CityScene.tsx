@@ -11,6 +11,7 @@ import { useCity } from "@/lib/store";
 import { Buildings } from "./Buildings";
 import { CameraRig } from "./CameraRig";
 import { Ground } from "./Ground";
+import { Route } from "./Route";
 import { Sky } from "./Sky";
 
 interface Props {
@@ -46,6 +47,7 @@ export function CityScene({ feed, plan, quality, skipIntro }: Props) {
       <CameraRig plan={plan} skipIntro={skipIntro} />
       <HoverLabel feed={feed} plan={plan} />
       <Marker plan={plan} />
+      <Route plan={plan} />
       {quality === "high" ? (
         <EffectComposer multisampling={0}>
           <Bloom intensity={0.7} luminanceThreshold={0.68} luminanceSmoothing={0.35} mipmapBlur />
