@@ -54,3 +54,28 @@ test("the list view sorts and the repository redirect points at Contributable", 
   expect(response.status()).toBe(307);
   expect(response.headers()["location"]).toBe("https://contributable.vercel.app/repo/metabrainz/picard");
 });
+
+test("compare picks two buildings and the postcard downloads an image", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByRole("searchbox", { name: "Light up your stack" })).toBeEnabled();
+  // Let the opening flight land.
+  await page.getByRole("button", { name: "Skip the flight" }).waitFor({ state: "hidden", timeout: 20_000 });
+
+  // Pick two buildings from the ghost towns list, then compare them.
+  await page.getByRole("button", { name: "Compare" }).click();
+  await expect(page.getByRole("region", { name: "Compare two projects" })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await page.getByRole("button", { name: "Ghost towns" }).click();
+  const list = page.getByRole("region", { name: "Ghost towns" });
+  await list.getByRole("button").nth(1).click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await page.keyboard.press("Escape");
+
+  const download = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Postcard" }).click();
+  const file = await download;
+  expect(file.suggestedFilename()).toMatch(/^osscity-\d{4}-\d{2}-\d{2}\.png$/);
+
+  await page.getByRole("button", { name: "2D map" }).click();
+  await expect(page.getByRole("button", { name: "3D city" })).toBeVisible();
+});
