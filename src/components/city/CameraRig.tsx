@@ -163,7 +163,7 @@ export function CameraRig({ plan, skipIntro }: Props) {
 
   const resetSerial = useCity((s) => s.resetSerial);
   useEffect(() => {
-    if (resetSerial) fly(overviewPose(plan), 1.4);
+    if (resetSerial) fly(overviewPose(plan), 1.0);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resetSerial]);
 

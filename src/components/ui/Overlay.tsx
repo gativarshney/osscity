@@ -89,6 +89,7 @@ export function Overlay({ stats, generatedAt, loadError, viewReason }: Props) {
 
       {selected == null && mode === "explore" && district == null && !ranking ? <Legend /> : null}
       {introDone && !preparing && mode === "explore" ? <Hint /> : null}
+      {feed && mode !== "tour" && (selected != null || district != null || ranking) ? <BackToOverview /> : null}
 
       {!introDone && !preparing ? (
         <button
@@ -453,5 +454,23 @@ function Hint() {
         x
       </button>
     </p>
+  );
+}
+
+/** One tap back to the whole city, shown whenever something has the camera zoomed in. */
+function BackToOverview() {
+  const resetView = useCity((s) => s.resetView);
+  return (
+    <button
+      type="button"
+      onClick={resetView}
+      title="Back to the whole city (R)"
+      className="glass-strong rise pointer-events-auto absolute bottom-20 left-4 z-30 flex items-center gap-2 rounded-full px-4 py-2 text-[13px] text-ink hover:border-accent sm:bottom-24 sm:left-6"
+    >
+      <svg viewBox="0 0 20 20" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M11 4 5 10l6 6M5 10h10" />
+      </svg>
+      Back to overview
+    </button>
   );
 }

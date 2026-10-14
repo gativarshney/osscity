@@ -20,6 +20,7 @@ export function RepoCard() {
   const selected = useCity((s) => s.selected);
   const select = useCity((s) => s.select);
   const flyTo = useCity((s) => s.flyTo);
+  const resetView = useCity((s) => s.resetView);
   const closeButton = useRef<HTMLButtonElement>(null);
 
   const repo = feed && selected != null ? feed.repos[selected] : null;
@@ -126,6 +127,14 @@ export function RepoCard() {
             Fly here
           </button>
         ) : null}
+        <button
+          type="button"
+          onClick={resetView}
+          title="Back to the whole city (R)"
+          className="rounded-2xl border border-hair-strong px-4 py-2.5 text-[14px] text-ink-2 hover:text-ink"
+        >
+          Overview
+        </button>
       </div>
     </section>
   );

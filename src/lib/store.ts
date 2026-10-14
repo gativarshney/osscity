@@ -166,9 +166,9 @@ export const useCity = create<CityState>((set, get) => ({
   },
   districts: [],
   district: null,
-  openDistrict: (district) => set({ district, ranking: false }),
+  openDistrict: (district) => set(district ? { district, ranking: false, selected: null } : { district }),
   ranking: false,
-  setRanking: (ranking) => set({ ranking, district: ranking ? null : get().district }),
+  setRanking: (ranking) => set(ranking ? { ranking, district: null, selected: null } : { ranking }),
   introDone: false,
   finishIntro: () => set({ introDone: true }),
   sceneReady: false,
@@ -188,7 +188,8 @@ export const useCity = create<CityState>((set, get) => ({
     if (get().hovered !== hovered) set({ hovered });
   },
   selected: null,
-  select: (selected) => set({ selected }),
+  // A card, a district and the ranking share the right side, so only one is open at a time.
+  select: (selected) => set(selected == null ? { selected } : { selected, district: null, ranking: false }),
 
   mode: "explore",
   setMode: (mode) => {
@@ -259,7 +260,7 @@ export const useCity = create<CityState>((set, get) => ({
     set({ goal: { ...frameGoal(plan, indices, seconds), serial: ++serial } });
   },
   resetSerial: 0,
-  resetView: () => set({ resetSerial: ++serial, selected: null, goal: null }),
+  resetView: () => set({ resetSerial: ++serial, selected: null, district: null, ranking: false, goal: null }),
 }));
 
 /** The repository at an index, or null. */
