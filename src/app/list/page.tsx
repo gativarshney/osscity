@@ -29,7 +29,11 @@ export default async function ListPage() {
           <p className="mt-2 max-w-2xl text-[14.5px] text-ink-2">
             The same data as the city, sortable. Reply figures rest on at least five outside pull requests;
             otherwise they read &quot;Not enough data&quot;.{" "}
-            {feed ? `Data from Contributable, updated ${compactDate(feed.generatedAt)}.` : ""}
+            {feed ? `Data from Contributable, updated ${compactDate(feed.generatedAt)}.` : ""} By{" "}
+            <a href="https://gativarshney.github.io/" className="text-ink hover:text-accent" target="_blank" rel="noopener">
+              Gati Varshney
+            </a>
+            .
           </p>
         </div>
         <Link

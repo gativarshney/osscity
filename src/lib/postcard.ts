@@ -38,7 +38,7 @@ export function renderPostcard({ source, caption, updated, width = 2400 }: Postc
   ctx.fillText("OSS City", pad, h - pad - Math.round(34 * unit));
   ctx.fillStyle = "rgba(244,243,239,0.75)";
   ctx.font = `400 ${Math.round(16 * unit)}px Inter, system-ui, sans-serif`;
-  ctx.fillText(caption, pad, h - pad);
+  ctx.fillText(`${caption}. By Gati Varshney`, pad, h - pad);
 
   const right = "Powered by Contributable";
   const small = `contributable.vercel.app, updated ${updated}`;

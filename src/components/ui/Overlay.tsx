@@ -61,6 +61,11 @@ export function Overlay({ stats, generatedAt, loadError, viewReason }: Props) {
           <SearchBox disabled={preparing} />
           <Stats stats={stats} preparing={preparing} loadError={loadError} />
           <p className="mt-3 text-[12px] text-ink-3">
+            By{" "}
+            <a href="https://gativarshney.github.io/" className="text-ink-2 hover:text-ink" target="_blank" rel="noopener">
+              Gati Varshney
+            </a>
+            .{" "}
             {generatedAt
               ? `Data from Contributable, updated ${compactDate(generatedAt)}.`
               : "Data from Contributable."}
