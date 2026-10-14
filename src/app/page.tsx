@@ -1,7 +1,15 @@
-export default function Home() {
+import { CityApp } from "@/components/CityApp";
+import { getCityFeed } from "@/lib/city/source";
+import { cityStats } from "@/lib/city/stats";
+
+export const revalidate = 900;
+
+export default async function Home() {
+  const feed = await getCityFeed();
+  const stats = feed ? cityStats(feed) : null;
   return (
-    <main className="flex flex-1 items-center justify-center p-8">
-      <h1 className="text-2xl font-semibold tracking-tight">OSS City</h1>
+    <main className="flex-1">
+      <CityApp stats={stats} generatedAt={feed?.generatedAt ?? null} />
     </main>
   );
 }
