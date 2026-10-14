@@ -32,7 +32,7 @@ export function overviewPose(
 ): Pose {
   const azimuth = -0.55;
   // On wide screens the title sits on the left, so the city is framed to the right.
-  const shift = wide ? Math.max(plan.halfWidth, plan.halfDepth) * 0.3 : 0;
+  const shift = wide ? Math.max(plan.halfWidth, plan.halfDepth) * 0.42 : 0;
   return {
     target: new THREE.Vector3(-Math.cos(azimuth) * shift, 0, Math.sin(azimuth) * shift),
     distance: Math.max(plan.halfWidth * 2.0, plan.halfDepth * 2.8),

@@ -48,6 +48,26 @@ export function CityApp({ stats, generatedAt }: Props) {
     setSkipIntro(prefersReducedMotion());
   }, [setView]);
 
+  // A search can be shared as a link: /?q=python,django
+  const query = useCity((s) => s.query);
+  const setQuery = useCity((s) => s.setQuery);
+  useEffect(() => {
+    if (!feed) return;
+    const q = new URLSearchParams(window.location.search).get("q");
+    if (q && !useCity.getState().query) setQuery(q);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [feed]);
+  useEffect(() => {
+    if (!feed) return;
+    const timer = setTimeout(() => {
+      const url = new URL(window.location.href);
+      if (query.trim()) url.searchParams.set("q", query.trim());
+      else url.searchParams.delete("q");
+      window.history.replaceState(null, "", url);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [query, feed]);
+
   useEffect(() => {
     let cancelled = false;
     fetch("/api/city")

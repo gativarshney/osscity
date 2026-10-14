@@ -50,7 +50,7 @@ export function Overlay({ stats, generatedAt, loadError, viewReason }: Props) {
       </header>
 
       <div
-        className={`flex min-h-0 flex-1 flex-col justify-center px-4 pb-24 transition-opacity duration-500 sm:px-6 sm:pb-20 ${
+        className={`flex min-h-0 flex-1 flex-col justify-center bg-gradient-to-r from-bg/90 via-bg/55 to-transparent px-4 pb-24 transition-opacity duration-500 sm:px-6 sm:pb-20 md:bg-[linear-gradient(90deg,var(--bg)_0%,color-mix(in_oklab,var(--bg)_70%,transparent)_34%,transparent_52%)] ${
           quiet ? "pointer-events-none opacity-0" : "opacity-100"
         }`}
       >
